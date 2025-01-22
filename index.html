@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cálculo de Matéria Seca</title>
+  <title>Calculadora de Matéria Seca</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -72,14 +72,16 @@
       <select id="animalType" required>
         <option value="boi">Boi</option>
         <option value="vaca">Vaca</option>
-        <option value="bezerro">Bezerro</option>
+        <option value="ave">Ave</option>
+        <option value="suíno">Suíno</option>
+        <option value="ovino">Ovino</option>
       </select>
       
       <label for="weight">Peso Vivo (kg):</label>
       <input type="number" id="weight" min="1" required>
       
-      <label for="dryMatter">% de Matéria Seca:</label>
-      <input type="number" id="dryMatter" min="1" max="100" value="3" required>
+      <label for="output">Produção (opcional - ex.: litros de leite, ovos/dia):</label>
+      <input type="number" id="output" min="0" placeholder="Deixe vazio se não for aplicável">
       
       <button type="submit">Calcular</button>
     </form>
@@ -89,7 +91,7 @@
         <tr>
           <th>Tipo de Animal</th>
           <th>Peso Vivo (kg)</th>
-          <th>% MS</th>
+          <th>Produção</th>
           <th>MS (kg/dia)</th>
         </tr>
       </thead>
@@ -102,13 +104,34 @@
     document.getElementById('animalForm').addEventListener('submit', function(event) {
       event.preventDefault();
 
-      // Obter valores do formulário
       const animalType = document.getElementById('animalType').value;
       const weight = parseFloat(document.getElementById('weight').value);
-      const dryMatterPercentage = parseFloat(document.getElementById('dryMatter').value) / 100;
+      const output = parseFloat(document.getElementById('output').value) || 0;
+      let dryMatter = 0;
 
-      // Calcular a matéria seca
-      const dryMatter = (weight * dryMatterPercentage).toFixed(2);
+      // Fórmulas específicas por animal
+      switch (animalType) {
+        case 'boi':
+          dryMatter = weight * 0.03; // 3% do peso vivo
+          break;
+        case 'vaca':
+          dryMatter = weight * 0.03 + (output * 0.4); // 3% do peso vivo + 0,4 kg de MS por litro de leite
+          break;
+        case 'ave':
+          dryMatter = weight * 0.12; // 12% do peso vivo
+          break;
+        case 'suíno':
+          dryMatter = weight * 0.04; // 4% do peso vivo
+          break;
+        case 'ovino':
+          dryMatter = weight * 0.035; // 3,5% do peso vivo
+          break;
+        default:
+          alert('Tipo de animal inválido!');
+          return;
+      }
+
+      dryMatter = dryMatter.toFixed(2);
 
       // Adicionar resultado na tabela
       const resultTable = document.getElementById('resultTable');
@@ -116,12 +139,12 @@
       newRow.innerHTML = `
         <td>${animalType}</td>
         <td>${weight} kg</td>
-        <td>${(dryMatterPercentage * 100).toFixed(1)}%</td>
+        <td>${output > 0 ? output : 'N/A'}</td>
         <td>${dryMatter} kg/dia</td>
       `;
       resultTable.appendChild(newRow);
 
-      // Limpar o formulário
+      // Limpar formulário
       document.getElementById('animalForm').reset();
     });
   </script>
