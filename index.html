@@ -1,52 +1,129 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase Realtime Database</title>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cálculo de Matéria Seca</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+  </style>
 </head>
 <body>
-    <h1>Conectar ao Firebase</h1>
-    <form id="dataForm">
-        <label for="name">Nome:</label>
-        <input type="text" id="name" name="name" required>
-        <button type="submit">Enviar</button>
+  <h1>Calculadora de Matéria Seca</h1>
+  <div class="container">
+    <form id="animalForm">
+      <label for="animalType">Tipo de Animal:</label>
+      <select id="animalType" required>
+        <option value="boi">Boi</option>
+        <option value="vaca">Vaca</option>
+        <option value="bezerro">Bezerro</option>
+      </select>
+      
+      <label for="weight">Peso Vivo (kg):</label>
+      <input type="number" id="weight" min="1" required>
+      
+      <label for="dryMatter">% de Matéria Seca:</label>
+      <input type="number" id="dryMatter" min="1" max="100" value="3" required>
+      
+      <button type="submit">Calcular</button>
     </form>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Tipo de Animal</th>
+          <th>Peso Vivo (kg)</th>
+          <th>% MS</th>
+          <th>MS (kg/dia)</th>
+        </tr>
+      </thead>
+      <tbody id="resultTable">
+      </tbody>
+    </table>
+  </div>
+  
+  <script>
+    document.getElementById('animalForm').addEventListener('submit', function(event) {
+      event.preventDefault();
 
-    <script>
-        // Configuração do Firebase
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
-            authDomain: "SEU_DOMINIO.firebaseapp.com",
-            databaseURL: "https://formulario-ec37a-default-rtdb.firebaseio.com",
-            projectId: "SEU_PROJETO_ID",
-            storageBucket: "SEU_BUCKET.appspot.com",
-            messagingSenderId: "SEU_ID",
-            appId: "SEU_APP_ID"
-        };
+      // Obter valores do formulário
+      const animalType = document.getElementById('animalType').value;
+      const weight = parseFloat(document.getElementById('weight').value);
+      const dryMatterPercentage = parseFloat(document.getElementById('dryMatter').value) / 100;
 
-        // Inicializar Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+      // Calcular a matéria seca
+      const dryMatter = (weight * dryMatterPercentage).toFixed(2);
 
-        // Enviar dados para o Realtime Database
-        const form = document.getElementById('dataForm');
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('name').value;
+      // Adicionar resultado na tabela
+      const resultTable = document.getElementById('resultTable');
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td>${animalType}</td>
+        <td>${weight} kg</td>
+        <td>${(dryMatterPercentage * 100).toFixed(1)}%</td>
+        <td>${dryMatter} kg/dia</td>
+      `;
+      resultTable.appendChild(newRow);
 
-            // Enviando dados
-            firebase.database().ref('users/').push({
-                name: name,
-                timestamp: Date.now()
-            }).then(() => {
-                alert('Dados enviados com sucesso!');
-            }).catch(error => {
-                console.error('Erro ao enviar dados:', error);
-            });
-        });
-    </script>
+      // Limpar o formulário
+      document.getElementById('animalForm').reset();
+    });
+  </script>
 </body>
 </html>
