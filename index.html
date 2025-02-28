@@ -1,72 +1,50 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M2 Global - Gráfico</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Índice de Medo e Ganância</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
+
+        .container {
+            text-align: center;
+            background-color: #fff;
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+        }
+
         canvas {
-            max-width: 80%;
-            margin: auto;
+            width: 100%;
+            height: 400px;
         }
     </style>
 </head>
 <body>
-    <h1>Gráfico do M2 Global</h1>
-    <canvas id="m2Chart"></canvas>
+    <div class="container">
+        <h1>Índice de Medo e Ganância</h1>
+        <canvas id="fearGreedChart"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        async function fetchM2Data() {
-            const apiKey = 'd2c2255a3e7ddd1d1a3785c8357b608d';
-            const url = `https://api.stlouisfed.org/fred/series/observations?series_id=M2&api_key=${apiKey}&file_type=json`;
-            
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                const observations = data.observations;
-                const labels = observations.map(obs => obs.date);
-                const values = observations.map(obs => parseFloat(obs.value));
-                
-                renderChart(labels, values);
-            } catch (error) {
-                console.error("Erro ao buscar dados do M2:", error);
-            }
-        }
-
-        function renderChart(labels, data) {
-            const ctx = document.getElementById('m2Chart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'M2 Global',
-                        data: data,
-                        borderColor: 'blue',
-                        fill: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            title: { display: true, text: 'Data' }
-                        },
-                        y: {
-                            title: { display: true, text: 'Valor do M2' }
-                        }
-                    }
-                }
-            });
-        }
-
-        fetchM2Data();
-    </script>
-</body>
-</html>
+        // Dados de exemplo para o gráfico
+        const data = {
+            labels: ['Medo', 'Ganância'],
+            datasets: [{
+                label: 'Índice',
+                data: [75, 25],  // Substitua pelos valores reais de medo e ganância
+                backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(75, 192, 192, 0.2)'],
+                b
