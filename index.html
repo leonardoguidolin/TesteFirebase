@@ -47,4 +47,41 @@
                 label: 'Índice',
                 data: [75, 25],  // Substitua pelos valores reais de medo e ganância
                 backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(75, 192, 192, 0.2)'],
-                b
+                borderColor: ['rgba(255, 99, 132, 1)', 'rgba(75, 192, 192, 1)'],
+                borderWidth: 1
+            }]
+        };
+
+        // Configuração do gráfico
+        const config = {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.raw + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Criar o gráfico
+        const ctx = document.getElementById('fearGreedChart').getContext('2d');
+        new Chart(ctx, config);
+    </script>
+</body>
+</html>
