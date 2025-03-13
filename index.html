@@ -259,6 +259,7 @@
                 const processedImageData = this.preprocessImage(imageData);
                 context.putImageData(processedImageData, 0, 0);
                 
+                // Converter para JPEG com qualidade máxima
                 this.capturedImage = this.canvas.toDataURL('image/jpeg', 1.0);
                 this.processBtn.disabled = false;
                 
@@ -273,17 +274,55 @@
 
             preprocessImage(imageData) {
                 const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
                 
-                // Converter para escala de cinza e aplicar threshold
+                // Calcular o threshold adaptativo
+                let sum = 0;
+                let count = 0;
                 for (let i = 0; i < data.length; i += 4) {
                     const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                    const threshold = 128;
+                    sum += avg;
+                    count++;
+                }
+                const threshold = (sum / count) * 0.8; // 80% da média
+
+                // Processar a imagem
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
                     
-                    // Aplicar threshold para criar imagem binária
+                    // Aplicar threshold adaptativo
                     const value = avg > threshold ? 255 : 0;
+                    
+                    // Aplicar o valor aos canais RGB
                     data[i] = value;     // R
                     data[i + 1] = value; // G
                     data[i + 2] = value; // B
+                }
+
+                // Remover ruídos e manchas
+                for (let y = 1; y < height - 1; y++) {
+                    for (let x = 1; x < width - 1; x++) {
+                        const idx = (y * width + x) * 4;
+                        
+                        // Verificar pixels vizinhos
+                        const top = (y - 1) * width + x;
+                        const bottom = (y + 1) * width + x;
+                        const left = y * width + (x - 1);
+                        const right = y * width + (x + 1);
+                        
+                        // Se o pixel atual é preto e todos os vizinhos são brancos
+                        if (data[idx] === 0 && 
+                            data[top * 4] === 255 && 
+                            data[bottom * 4] === 255 && 
+                            data[left * 4] === 255 && 
+                            data[right * 4] === 255) {
+                            // Converter para branco
+                            data[idx] = 255;
+                            data[idx + 1] = 255;
+                            data[idx + 2] = 255;
+                        }
+                    }
                 }
                 
                 return imageData;
@@ -316,7 +355,8 @@
                         tessjs_create_unlv: '0',
                         tessjs_create_osd: '0',
                         tessedit_ocr_engine_mode: '2',
-                        tessjs_image_dpi: '300'
+                        tessjs_image_dpi: '300',
+                        tessedit_do_invert: '1'
                     });
 
                     // Processar a imagem
