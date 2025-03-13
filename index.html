@@ -201,14 +201,14 @@
                 <p><strong>Como preparar o gabarito:</strong></p>
                 <ul>
                     <li>Use um papel branco sem linhas ou marcações</li>
-                    <li>Escreva os números das questões e as respostas marcadas</li>
-                    <li>Formato: número da questão seguido da letra da resposta</li>
+                    <li>Escreva apenas as letras das respostas, uma por linha</li>
+                    <li>Use letras maiúsculas (A, B, C, D, E)</li>
                     <li>Exemplo:</li>
-                    <pre>1 A
-2 B
-3 C
-4 D
-5 E</pre>
+                    <pre>A
+B
+C
+D
+E</pre>
                 </ul>
             </div>
         </div>
@@ -346,7 +346,7 @@
                     
                     // Configurar parâmetros do Tesseract para melhor reconhecimento
                     await worker.setParameters({
-                        tessedit_char_whitelist: '0123456789ABCDE',
+                        tessedit_char_whitelist: 'ABCDE',
                         tessedit_pageseg_mode: '6',
                         tessjs_create_pdf: '0',
                         tessjs_create_hocr: '0',
@@ -356,7 +356,8 @@
                         tessjs_create_osd: '0',
                         tessedit_ocr_engine_mode: '2',
                         tessjs_image_dpi: '300',
-                        tessedit_do_invert: '1'
+                        tessedit_do_invert: '1',
+                        tessedit_char_blacklist: '0123456789'
                     });
 
                     // Processar a imagem
@@ -367,7 +368,11 @@
                     const respostas = this.extractAnswers(text);
                     
                     if (respostas.length === 0) {
-                        throw new Error('Não foi possível identificar respostas na imagem. Verifique se o gabarito está legível e no formato correto.');
+                        throw new Error('Não foi possível identificar respostas na imagem. Verifique se:\n\n' +
+                            '1. As respostas estão escritas em letras maiúsculas (A, B, C, D, E)\n' +
+                            '2. Cada resposta está em uma linha separada\n' +
+                            '3. A escrita está clara e bem espaçada\n' +
+                            '4. A imagem está bem iluminada e sem sombras');
                     }
                     
                     // Calcular pontuação
@@ -381,7 +386,7 @@
                     alert(error.message || 'Erro ao processar a imagem. Verifique se:\n\n' +
                         '1. O gabarito está bem iluminado\n' +
                         '2. A escrita está clara e legível\n' +
-                        '3. O formato está correto (número seguido da letra)\n' +
+                        '3. Cada resposta está em uma linha separada\n' +
                         '4. O gabarito correto foi preenchido\n' +
                         '5. A imagem está nítida e sem sombras');
                 } finally {
@@ -393,30 +398,19 @@
             extractAnswers(text) {
                 const respostas = [];
                 const lines = text.split('\n');
+                let numero = 1;
                 
                 for (const line of lines) {
-                    // Melhorar o padrão de reconhecimento
-                    const match = line.match(/(\d+)\s*([A-Ea-e])/i);
+                    // Procurar apenas por letras A-E
+                    const match = line.match(/[A-Ea-e]/i);
                     if (match) {
-                        const numero = parseInt(match[1]);
-                        const resposta = match[2].toUpperCase();
-                        
-                        // Validar se o número é válido
-                        if (numero > 0 && numero <= 100) {
-                            respostas.push({ numero, resposta });
-                        }
+                        const resposta = match[0].toUpperCase();
+                        respostas.push({ numero, resposta });
+                        numero++;
                     }
                 }
                 
-                // Ordenar respostas por número da questão
-                respostas.sort((a, b) => a.numero - b.numero);
-                
-                // Remover duplicatas (caso o OCR reconheça a mesma linha duas vezes)
-                const respostasUnicas = respostas.filter((resp, index, self) =>
-                    index === self.findIndex((r) => r.numero === resp.numero)
-                );
-                
-                return respostasUnicas;
+                return respostas;
             }
 
             parseGabaritoCorreto() {
