@@ -273,16 +273,37 @@
                 this.processBtn.textContent = 'Processando...';
 
                 try {
+                    // Verificar se o gabarito correto foi preenchido
+                    const gabaritoCorreto = this.parseGabaritoCorreto();
+                    if (gabaritoCorreto.length === 0) {
+                        throw new Error('Por favor, preencha o gabarito correto antes de processar.');
+                    }
+
                     // Inicializar Tesseract
                     const worker = await Tesseract.createWorker('por');
                     
+                    // Configurar parâmetros do Tesseract para melhor reconhecimento
+                    await worker.setParameters({
+                        tessedit_char_whitelist: '0123456789ABCDE',
+                        tessedit_pageseg_mode: '6',
+                        tessjs_create_pdf: '0',
+                        tessjs_create_hocr: '0',
+                        tessjs_create_tsv: '0',
+                        tessjs_create_box: '0',
+                        tessjs_create_unlv: '0',
+                        tessjs_create_osd: '0'
+                    });
+
                     // Processar a imagem
                     const { data: { text } } = await worker.recognize(this.capturedImage);
                     await worker.terminate();
 
                     // Processar o texto extraído
                     const respostas = this.extractAnswers(text);
-                    const gabaritoCorreto = this.parseGabaritoCorreto();
+                    
+                    if (respostas.length === 0) {
+                        throw new Error('Não foi possível identificar respostas na imagem. Verifique se o gabarito está legível e no formato correto.');
+                    }
                     
                     // Calcular pontuação
                     const { acertos, total, nota } = this.calculateScore(respostas, gabaritoCorreto);
@@ -292,7 +313,11 @@
                     
                 } catch (error) {
                     console.error('Erro ao processar imagem:', error);
-                    alert('Erro ao processar a imagem. Tente novamente.');
+                    alert(error.message || 'Erro ao processar a imagem. Verifique se:\n\n' +
+                        '1. O gabarito está bem iluminado\n' +
+                        '2. A escrita está clara e legível\n' +
+                        '3. O formato está correto (número seguido da letra)\n' +
+                        '4. O gabarito correto foi preenchido');
                 } finally {
                     this.processBtn.disabled = false;
                     this.processBtn.textContent = 'Processar';
@@ -304,7 +329,8 @@
                 const lines = text.split('\n');
                 
                 for (const line of lines) {
-                    const match = line.match(/(\d+)\s*([A-E])/i);
+                    // Melhorar o padrão de reconhecimento
+                    const match = line.match(/(\d+)\s*([A-Ea-e])/i);
                     if (match) {
                         respostas.push({
                             numero: parseInt(match[1]),
@@ -312,6 +338,9 @@
                         });
                     }
                 }
+                
+                // Ordenar respostas por número da questão
+                respostas.sort((a, b) => a.numero - b.numero);
                 
                 return respostas;
             }
@@ -321,6 +350,10 @@
                     .split(',')
                     .map(resp => resp.trim().toUpperCase())
                     .filter(resp => ['A', 'B', 'C', 'D', 'E'].includes(resp));
+                
+                if (gabarito.length === 0) {
+                    throw new Error('Por favor, preencha o gabarito correto com as respostas separadas por vírgula (ex: A,B,C,D,E)');
+                }
                 
                 return gabarito;
             }
