@@ -254,7 +254,12 @@
                 this.canvas.height = this.video.videoHeight;
                 context.drawImage(this.video, 0, 0);
                 
-                this.capturedImage = this.canvas.toDataURL('image/jpeg');
+                // Aplicar pré-processamento da imagem
+                const imageData = context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                const processedImageData = this.preprocessImage(imageData);
+                context.putImageData(processedImageData, 0, 0);
+                
+                this.capturedImage = this.canvas.toDataURL('image/jpeg', 1.0);
                 this.processBtn.disabled = false;
                 
                 // Mostrar preview da imagem capturada
@@ -264,6 +269,24 @@
                 img.style.width = '100%';
                 img.style.height = 'auto';
                 this.video.parentNode.insertBefore(img, this.video);
+            }
+
+            preprocessImage(imageData) {
+                const data = imageData.data;
+                
+                // Converter para escala de cinza e aplicar threshold
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    const threshold = 128;
+                    
+                    // Aplicar threshold para criar imagem binária
+                    const value = avg > threshold ? 255 : 0;
+                    data[i] = value;     // R
+                    data[i + 1] = value; // G
+                    data[i + 2] = value; // B
+                }
+                
+                return imageData;
             }
 
             async processImage() {
@@ -291,7 +314,9 @@
                         tessjs_create_tsv: '0',
                         tessjs_create_box: '0',
                         tessjs_create_unlv: '0',
-                        tessjs_create_osd: '0'
+                        tessjs_create_osd: '0',
+                        tessedit_ocr_engine_mode: '2',
+                        tessjs_image_dpi: '300'
                     });
 
                     // Processar a imagem
@@ -317,7 +342,8 @@
                         '1. O gabarito está bem iluminado\n' +
                         '2. A escrita está clara e legível\n' +
                         '3. O formato está correto (número seguido da letra)\n' +
-                        '4. O gabarito correto foi preenchido');
+                        '4. O gabarito correto foi preenchido\n' +
+                        '5. A imagem está nítida e sem sombras');
                 } finally {
                     this.processBtn.disabled = false;
                     this.processBtn.textContent = 'Processar';
@@ -332,17 +358,25 @@
                     // Melhorar o padrão de reconhecimento
                     const match = line.match(/(\d+)\s*([A-Ea-e])/i);
                     if (match) {
-                        respostas.push({
-                            numero: parseInt(match[1]),
-                            resposta: match[2].toUpperCase()
-                        });
+                        const numero = parseInt(match[1]);
+                        const resposta = match[2].toUpperCase();
+                        
+                        // Validar se o número é válido
+                        if (numero > 0 && numero <= 100) {
+                            respostas.push({ numero, resposta });
+                        }
                     }
                 }
                 
                 // Ordenar respostas por número da questão
                 respostas.sort((a, b) => a.numero - b.numero);
                 
-                return respostas;
+                // Remover duplicatas (caso o OCR reconheça a mesma linha duas vezes)
+                const respostasUnicas = respostas.filter((resp, index, self) =>
+                    index === self.findIndex((r) => r.numero === resp.numero)
+                );
+                
+                return respostasUnicas;
             }
 
             parseGabaritoCorreto() {
