@@ -256,31 +256,31 @@
 
             generateTemplate() {
                 const templateContent = document.getElementById('templateContent');
-                let html = '<div style="font-size: 12px; max-width: 400px; margin: 0 auto;">';
+                let html = '<div style="font-size: 8px; max-width: 200px; margin: 0 auto;">';
                 
                 // Cabeçalho
-                html += '<div style="text-align: center; margin-bottom: 20px;">';
-                html += '<h2 style="font-size: 16px; margin-bottom: 10px;">Gabarito</h2>';
-                html += '<p style="font-size: 10px; color: #666;">Marque apenas uma opção por questão</p>';
+                html += '<div style="text-align: center; margin-bottom: 10px;">';
+                html += '<h2 style="font-size: 12px; margin-bottom: 5px;">Gabarito</h2>';
+                html += '<p style="font-size: 7px; color: #666;">Marque apenas uma opção por questão</p>';
                 html += '</div>';
 
                 // Grid de respostas
-                html += '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;">';
+                html += '<div style="display: grid; grid-template-columns: 20px repeat(5, 1fr); gap: 2px;">';
                 
                 // Cabeçalho das colunas
-                html += '<div style="grid-column: 1 / 2;"></div>'; // Espaço para número
+                html += '<div></div>'; // Espaço para número
                 for (let letra of ['A', 'B', 'C', 'D', 'E']) {
-                    html += `<div style="text-align: center; font-weight: bold;">${letra}</div>`;
+                    html += `<div style="text-align: center; font-weight: bold; font-size: 8px;">${letra}</div>`;
                 }
 
                 // Linhas das questões
                 for (let i = 1; i <= 50; i++) {
                     // Número da questão
-                    html += `<div style="text-align: right; padding-right: 5px;">${i}</div>`;
+                    html += `<div style="text-align: right; padding-right: 2px; font-size: 8px;">${i}</div>`;
                     
                     // Bolinhas para cada opção
                     for (let j = 0; j < 5; j++) {
-                        html += `<div style="text-align: center;">○</div>`;
+                        html += `<div style="text-align: center; font-size: 8px;">○</div>`;
                     }
                 }
 
@@ -292,7 +292,30 @@
             printTemplate() {
                 const template = document.getElementById('template');
                 const printWindow = window.open('', '_blank');
-                printWindow.document.write(template.innerHTML);
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            @media print {
+                                body {
+                                    margin: 0;
+                                    padding: 0;
+                                }
+                                #templateContent {
+                                    transform: scale(0.2);
+                                    transform-origin: top left;
+                                    width: 500%;
+                                    height: 500%;
+                                }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${template.innerHTML}
+                    </body>
+                    </html>
+                `);
                 printWindow.document.close();
                 printWindow.print();
             }
