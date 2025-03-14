@@ -134,16 +134,17 @@
                     'por',
                     { 
                         logger: m => console.log(m),
-                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', // Apenas letras maiúsculas e números
+                        tessedit_char_whitelist: 'ABCDE', // Apenas as letras A, B, C, D, E
                         tessedit_ocr_engine_mode: 2, // Modo otimizado para texto escrito à mão
                         preserve_interword_spaces: '1',
                         textord_heavy_nr: '1',
-                        tessedit_pageseg_mode: '6' // Assume um bloco uniforme de texto
+                        tessedit_pageseg_mode: '6', // Assume um bloco uniforme de texto
+                        tessedit_write_images: true
                     }
                 );
 
                 // Limpar e formatar o texto reconhecido
-                let processedText = text.trim().toUpperCase();
+                let processedText = text.trim().toUpperCase().split('').filter(char => 'ABCDE'.includes(char)).join('');
                 
                 // Exibir resultado
                 resultado.textContent = processedText || 'Nenhum texto detectado';
