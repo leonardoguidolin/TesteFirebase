@@ -113,16 +113,40 @@
             // Capturar frame do vídeo
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+            // Pré-processamento da imagem para melhorar reconhecimento
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // Aumentar contraste e converter para preto e branco
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const threshold = 128;
+                const value = avg > threshold ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = value;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+
             try {
-                // Processar imagem com Tesseract.js
+                // Processar imagem com Tesseract.js com configurações otimizadas
                 const { data: { text } } = await Tesseract.recognize(
                     canvas.toDataURL('image/jpeg'),
                     'por',
-                    { logger: m => console.log(m) }
+                    { 
+                        logger: m => console.log(m),
+                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', // Apenas letras maiúsculas e números
+                        tessedit_ocr_engine_mode: 2, // Modo otimizado para texto escrito à mão
+                        preserve_interword_spaces: '1',
+                        textord_heavy_nr: '1',
+                        tessedit_pageseg_mode: '6' // Assume um bloco uniforme de texto
+                    }
                 );
 
+                // Limpar e formatar o texto reconhecido
+                let processedText = text.trim().toUpperCase();
+                
                 // Exibir resultado
-                resultado.textContent = text || 'Nenhum texto detectado';
+                resultado.textContent = processedText || 'Nenhum texto detectado';
             } catch (err) {
                 console.error('Erro ao processar imagem:', err);
                 resultado.textContent = 'Erro ao processar imagem';
