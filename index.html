@@ -61,11 +61,29 @@
             text-align: center;
             margin: 10px 0;
         }
+
+        .config-section {
+            margin-bottom: 20px;
+        }
+
+        .config-section label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .config-section input {
+            width: 100%;
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Leitor de Texto por Câmera</h1>
+        <div class="config-section">
+            <label for="qtdLetras">Quantidade de letras no texto:</label>
+            <input type="number" id="qtdLetras" min="1" max="50" value="1" style="width: 60px; padding: 5px; margin: 10px 0;">
+        </div>
         <video id="video" autoplay playsinline></video>
         <canvas id="canvas"></canvas>
         <div>
@@ -145,6 +163,17 @@
 
                 // Limpar e formatar o texto reconhecido
                 let processedText = text.trim().toUpperCase().split('').filter(char => 'ABCDE'.includes(char)).join('');
+                
+                // Obter a quantidade esperada de letras
+                const qtdEsperada = parseInt(document.getElementById('qtdLetras').value);
+                
+                // Ajustar o texto reconhecido para ter exatamente a quantidade esperada
+                if (processedText.length > qtdEsperada) {
+                    processedText = processedText.substring(0, qtdEsperada);
+                } else if (processedText.length < qtdEsperada) {
+                    resultado.textContent = `Erro: Foram detectadas ${processedText.length} letras, mas eram esperadas ${qtdEsperada}. Texto detectado: ${processedText}`;
+                    return;
+                }
                 
                 // Exibir resultado
                 resultado.textContent = processedText || 'Nenhum texto detectado';
