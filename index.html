@@ -180,6 +180,10 @@
                 <p>Acertos: <span id="acertos">0</span>/<span id="total">0</span></p>
                 <p>Nota: <span id="nota">0.00</span></p>
             </div>
+            <div class="debug-container" style="margin-top: 20px; padding: 10px; background-color: #eee; border-radius: 5px;">
+                <h3 style="color: #666; margin-bottom: 10px;">Texto Reconhecido:</h3>
+                <pre id="textoReconhecido" style="white-space: pre-wrap; font-family: monospace; background: white; padding: 10px; border-radius: 3px;"></pre>
+            </div>
         </div>
 
         <div class="gabarito-input">
@@ -526,7 +530,7 @@
                     
                     // Configurar parâmetros do Tesseract para melhor reconhecimento
                     await worker.setParameters({
-                        tessedit_char_whitelist: '0123456789●○',
+                        tessedit_char_whitelist: '0123456789●○OXx*ABCDEabcde',
                         tessedit_pageseg_mode: '6',
                         tessjs_create_pdf: '0',
                         tessjs_create_hocr: '0',
@@ -543,15 +547,15 @@
                     const { data: { text } } = await worker.recognize(this.capturedImage);
                     await worker.terminate();
 
+                    // Mostrar o texto reconhecido
+                    document.getElementById('textoReconhecido').textContent = text;
+                    document.getElementById('results').style.display = 'block';
+
                     // Processar o texto extraído
                     const respostas = this.extractAnswers(text);
                     
                     if (respostas.length === 0) {
-                        throw new Error('Não foi possível identificar respostas na imagem. Verifique se:\n\n' +
-                            '1. Você usou o template fornecido\n' +
-                            '2. Preencheu completamente a bolinha da resposta\n' +
-                            '3. Marcou apenas uma opção por questão\n' +
-                            '4. A imagem está bem iluminada e sem sombras');
+                        throw new Error('Não foi possível identificar respostas na imagem. Verifique o texto reconhecido acima.');
                     }
                     
                     // Calcular pontuação
@@ -562,12 +566,7 @@
                     
                 } catch (error) {
                     console.error('Erro ao processar imagem:', error);
-                    alert(error.message || 'Erro ao processar a imagem. Verifique se:\n\n' +
-                        '1. Você usou o template fornecido\n' +
-                        '2. Preencheu completamente a bolinha da resposta\n' +
-                        '3. Marcou apenas uma opção por questão\n' +
-                        '4. O gabarito correto foi preenchido\n' +
-                        '5. A imagem está nítida e sem sombras');
+                    alert(error.message || 'Erro ao processar a imagem. Verifique o texto reconhecido para mais detalhes.');
                 } finally {
                     this.processBtn.disabled = false;
                     this.processBtn.textContent = 'Processar';
@@ -581,5 +580,4 @@
         });
     </script>
 </body>
-</html> 
 </html> 
