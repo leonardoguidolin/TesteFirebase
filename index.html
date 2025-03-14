@@ -264,6 +264,9 @@
                 html += '<p style="font-size: 7px; color: #666;">Marque apenas uma opção por questão</p>';
                 html += '</div>';
 
+                // Container para a tabela rotacionada
+                html += '<div style="transform: rotate(90deg); transform-origin: top left; margin-left: 100px;">';
+                
                 // Grid de respostas
                 html += '<div style="display: grid; grid-template-columns: 20px repeat(5, 1fr); gap: 2px;">';
                 
@@ -285,6 +288,7 @@
                 }
 
                 html += '</div>'; // Fecha o grid
+                html += '</div>'; // Fecha o container rotacionado
                 html += '</div>'; // Fecha o container principal
                 templateContent.innerHTML = html;
             }
