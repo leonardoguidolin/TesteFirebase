@@ -264,10 +264,10 @@
                 html += '</div>';
 
                 // Container para a tabela rotacionada
-                html += '<div style="transform: rotate(90deg); transform-origin: top left; margin-left: 600px; margin-top: 100px;">';
+                html += '<div style="transform: rotate(90deg); transform-origin: top left; margin-left: 400px; margin-top: 250px; position: relative; left: 50%; transform-origin: left;">';
                 
-                // Grid de respostas
-                html += '<div style="display: grid; grid-template-columns: 80px repeat(5, 1fr); gap: 20px;">';
+                // Grid de respostas com largura fixa
+                html += '<div style="display: grid; grid-template-columns: 80px repeat(5, 100px); gap: 20px; width: fit-content;">';
                 
                 // Cabeçalho das colunas
                 html += '<div></div>'; // Espaço para número
