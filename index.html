@@ -256,29 +256,36 @@
 
             generateTemplate() {
                 const templateContent = document.getElementById('templateContent');
-                let html = '<table style="width: 100%; border-collapse: collapse;">';
+                let html = '<div style="font-size: 12px; max-width: 400px; margin: 0 auto;">';
                 
                 // Cabeçalho
-                html += '<tr style="background-color: #f0f0f0;">';
-                html += '<th style="padding: 10px; border: 1px solid #ccc;">Questão</th>';
-                html += '<th style="padding: 10px; border: 1px solid #ccc;">A</th>';
-                html += '<th style="padding: 10px; border: 1px solid #ccc;">B</th>';
-                html += '<th style="padding: 10px; border: 1px solid #ccc;">C</th>';
-                html += '<th style="padding: 10px; border: 1px solid #ccc;">D</th>';
-                html += '<th style="padding: 10px; border: 1px solid #ccc;">E</th>';
-                html += '</tr>';
+                html += '<div style="text-align: center; margin-bottom: 20px;">';
+                html += '<h2 style="font-size: 16px; margin-bottom: 10px;">Gabarito</h2>';
+                html += '<p style="font-size: 10px; color: #666;">Marque apenas uma opção por questão</p>';
+                html += '</div>';
+
+                // Grid de respostas
+                html += '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;">';
+                
+                // Cabeçalho das colunas
+                html += '<div style="grid-column: 1 / 2;"></div>'; // Espaço para número
+                for (let letra of ['A', 'B', 'C', 'D', 'E']) {
+                    html += `<div style="text-align: center; font-weight: bold;">${letra}</div>`;
+                }
 
                 // Linhas das questões
                 for (let i = 1; i <= 50; i++) {
-                    html += '<tr>';
-                    html += `<td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${i}</td>`;
-                    for (let letra of ['A', 'B', 'C', 'D', 'E']) {
-                        html += `<td style="padding: 10px; border: 1px solid #ccc; text-align: center; width: 60px; height: 60px;">[ ]</td>`;
+                    // Número da questão
+                    html += `<div style="text-align: right; padding-right: 5px;">${i}</div>`;
+                    
+                    // Bolinhas para cada opção
+                    for (let j = 0; j < 5; j++) {
+                        html += `<div style="text-align: center;">○</div>`;
                     }
-                    html += '</tr>';
                 }
 
-                html += '</table>';
+                html += '</div>'; // Fecha o grid
+                html += '</div>'; // Fecha o container principal
                 templateContent.innerHTML = html;
             }
 
@@ -374,13 +381,21 @@
                 const respostas = [];
                 const lines = text.split('\n');
                 
-                // Procurar por padrões de marcação (X ou ✓)
+                // Procurar por padrões de marcação (bolinhas preenchidas)
                 for (const line of lines) {
-                    const match = line.match(/(\d+)\s*[A-Ea-e]\s*[X✓]/i);
+                    // Procura por números seguidos de bolinhas preenchidas
+                    const match = line.match(/(\d+)\s*[●○]\s*[●○]\s*[●○]\s*[●○]\s*[●○]/i);
                     if (match) {
                         const numero = parseInt(match[1]);
-                        const resposta = match[0].match(/[A-Ea-e]/i)[0].toUpperCase();
-                        respostas.push({ numero, resposta });
+                        // Conta quantas bolinhas estão preenchidas
+                        const bolinhas = line.match(/●/g);
+                        if (bolinhas && bolinhas.length === 1) {
+                            // Encontra a posição da bolinha preenchida
+                            const posicao = line.indexOf('●');
+                            const letras = ['A', 'B', 'C', 'D', 'E'];
+                            const resposta = letras[Math.floor((posicao - 2) / 2)];
+                            respostas.push({ numero, resposta });
+                        }
                     }
                 }
                 
@@ -441,7 +456,7 @@
                     
                     // Configurar parâmetros do Tesseract para melhor reconhecimento
                     await worker.setParameters({
-                        tessedit_char_whitelist: '0123456789ABCDEX✓',
+                        tessedit_char_whitelist: '0123456789●○',
                         tessedit_pageseg_mode: '6',
                         tessjs_create_pdf: '0',
                         tessjs_create_hocr: '0',
@@ -464,8 +479,8 @@
                     if (respostas.length === 0) {
                         throw new Error('Não foi possível identificar respostas na imagem. Verifique se:\n\n' +
                             '1. Você usou o template fornecido\n' +
-                            '2. Marcou um X na letra correspondente\n' +
-                            '3. A escrita está clara e bem espaçada\n' +
+                            '2. Preencheu completamente a bolinha da resposta\n' +
+                            '3. Marcou apenas uma opção por questão\n' +
                             '4. A imagem está bem iluminada e sem sombras');
                     }
                     
@@ -479,8 +494,8 @@
                     console.error('Erro ao processar imagem:', error);
                     alert(error.message || 'Erro ao processar a imagem. Verifique se:\n\n' +
                         '1. Você usou o template fornecido\n' +
-                        '2. Marcou um X na letra correspondente\n' +
-                        '3. A escrita está clara e legível\n' +
+                        '2. Preencheu completamente a bolinha da resposta\n' +
+                        '3. Marcou apenas uma opção por questão\n' +
                         '4. O gabarito correto foi preenchido\n' +
                         '5. A imagem está nítida e sem sombras');
                 } finally {
