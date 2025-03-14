@@ -264,10 +264,11 @@
                 html += '</div>';
 
                 // Container para a tabela rotacionada
-                html += '<div style="transform: rotate(90deg); transform-origin: top left; margin-left: 400px; margin-top: 250px; position: relative; left: 50%; transform-origin: left;">';
+                html += '<div style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">';
+                html += '<div style="transform: rotate(90deg); transform-origin: center; margin: auto; position: relative;">';
                 
                 // Grid de respostas com largura fixa
-                html += '<div style="display: grid; grid-template-columns: 80px repeat(5, 100px); gap: 20px; width: fit-content;">';
+                html += '<div style="display: grid; grid-template-columns: 80px repeat(5, 100px); gap: 20px; margin: auto;">';
                 
                 // Cabeçalho das colunas
                 html += '<div></div>'; // Espaço para número
@@ -288,7 +289,7 @@
 
                 html += '</div>'; // Fecha o grid
                 html += '</div>'; // Fecha o container rotacionado
-                html += '</div>'; // Fecha o container principal
+                html += '</div>'; // Fecha o container de centralização
                 templateContent.innerHTML = html;
             }
 
@@ -304,18 +305,30 @@
                                 body {
                                     margin: 0;
                                     padding: 0;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    min-height: 100vh;
                                 }
                                 #templateContent {
                                     transform: scale(0.8);
-                                    transform-origin: top left;
-                                    width: 125%;
-                                    height: 125%;
+                                    transform-origin: center;
+                                    margin: auto;
+                                }
+                                .grid-container {
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    min-height: 100vh;
+                                    padding: 2cm;
                                 }
                             }
                         </style>
                     </head>
                     <body>
-                        ${template.innerHTML}
+                        <div class="grid-container">
+                            ${template.innerHTML}
+                        </div>
                     </body>
                     </html>
                 `);
@@ -406,26 +419,57 @@
             extractAnswers(text) {
                 const respostas = [];
                 const lines = text.split('\n');
+                let currentQuestion = 1;
                 
-                // Procurar por padrões de marcação (bolinhas preenchidas)
                 for (const line of lines) {
-                    // Procura por números seguidos de bolinhas preenchidas
-                    const match = line.match(/(\d+)\s*[●○]\s*[●○]\s*[●○]\s*[●○]\s*[●○]/i);
-                    if (match) {
-                        const numero = parseInt(match[1]);
-                        // Conta quantas bolinhas estão preenchidas
-                        const bolinhas = line.match(/●/g);
-                        if (bolinhas && bolinhas.length === 1) {
-                            // Encontra a posição da bolinha preenchida
-                            const posicao = line.indexOf('●');
+                    // Procura por qualquer número seguido de caracteres que possam ser círculos
+                    const numMatch = line.match(/(\d+)/);
+                    if (numMatch) {
+                        const numero = parseInt(numMatch[1]);
+                        if (numero >= 1 && numero <= 50) {
+                            currentQuestion = numero;
+                        }
+                    }
+                    
+                    // Procura por padrões que podem indicar uma resposta marcada
+                    if (line.includes('●') || line.includes('○') || line.includes('O') || line.includes('0')) {
+                        let posicao = -1;
+                        
+                        // Verifica cada possível marcação
+                        ['●', '○', 'O', '0', 'X', 'x', '*'].forEach((marca) => {
+                            const index = line.indexOf(marca);
+                            if (index !== -1) {
+                                // Estima a posição baseada na localização do caractere na linha
+                                const estimatedPosition = Math.floor(index / 10);
+                                if (estimatedPosition >= 0 && estimatedPosition < 5) {
+                                    posicao = estimatedPosition;
+                                }
+                            }
+                        });
+                        
+                        if (posicao !== -1) {
                             const letras = ['A', 'B', 'C', 'D', 'E'];
-                            const resposta = letras[Math.floor((posicao - 2) / 2)];
-                            respostas.push({ numero, resposta });
+                            respostas.push({
+                                numero: currentQuestion,
+                                resposta: letras[posicao]
+                            });
+                            currentQuestion++;
                         }
                     }
                 }
                 
-                return respostas;
+                // Remove duplicatas e ordena por número da questão
+                const respostasFiltradas = [];
+                const questoesProcessadas = new Set();
+                
+                for (const resp of respostas) {
+                    if (!questoesProcessadas.has(resp.numero)) {
+                        respostasFiltradas.push(resp);
+                        questoesProcessadas.add(resp.numero);
+                    }
+                }
+                
+                return respostasFiltradas.sort((a, b) => a.numero - b.numero);
             }
 
             parseGabaritoCorreto() {
@@ -537,4 +581,5 @@
         });
     </script>
 </body>
+</html> 
 </html> 
