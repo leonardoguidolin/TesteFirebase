@@ -200,16 +200,19 @@
             <div class="instructions">
                 <p><strong>Como preparar o gabarito:</strong></p>
                 <ul>
-                    <li>Use um papel branco sem linhas ou marcações</li>
-                    <li>Escreva apenas as letras das respostas, uma por linha</li>
-                    <li>Use letras maiúsculas (A, B, C, D, E)</li>
-                    <li>Exemplo:</li>
-                    <pre>A
-B
-C
-D
-E</pre>
+                    <li>Use o template abaixo para preencher as respostas</li>
+                    <li>Marque um X na letra correspondente à resposta</li>
+                    <li>Use caneta azul ou preta</li>
+                    <li>Mantenha o papel limpo e sem dobras</li>
                 </ul>
+                <button id="printTemplate" class="btn" style="margin-top: 1rem;">Imprimir Template</button>
+            </div>
+        </div>
+
+        <div id="template" style="display: none;">
+            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+                <h2 style="text-align: center; margin-bottom: 20px;">Gabarito</h2>
+                <div id="templateContent"></div>
             </div>
         </div>
     </div>
@@ -223,12 +226,14 @@ E</pre>
                 this.processBtn = document.getElementById('processBtn');
                 this.results = document.getElementById('results');
                 this.gabaritoInput = document.getElementById('gabaritoCorreto');
+                this.printTemplateBtn = document.getElementById('printTemplate');
                 
                 this.stream = null;
                 this.capturedImage = null;
                 
                 this.initializeCamera();
                 this.setupEventListeners();
+                this.generateTemplate();
             }
 
             async initializeCamera() {
@@ -246,6 +251,43 @@ E</pre>
             setupEventListeners() {
                 this.captureBtn.addEventListener('click', () => this.captureImage());
                 this.processBtn.addEventListener('click', () => this.processImage());
+                this.printTemplateBtn.addEventListener('click', () => this.printTemplate());
+            }
+
+            generateTemplate() {
+                const templateContent = document.getElementById('templateContent');
+                let html = '<table style="width: 100%; border-collapse: collapse;">';
+                
+                // Cabeçalho
+                html += '<tr style="background-color: #f0f0f0;">';
+                html += '<th style="padding: 10px; border: 1px solid #ccc;">Questão</th>';
+                html += '<th style="padding: 10px; border: 1px solid #ccc;">A</th>';
+                html += '<th style="padding: 10px; border: 1px solid #ccc;">B</th>';
+                html += '<th style="padding: 10px; border: 1px solid #ccc;">C</th>';
+                html += '<th style="padding: 10px; border: 1px solid #ccc;">D</th>';
+                html += '<th style="padding: 10px; border: 1px solid #ccc;">E</th>';
+                html += '</tr>';
+
+                // Linhas das questões
+                for (let i = 1; i <= 50; i++) {
+                    html += '<tr>';
+                    html += `<td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${i}</td>`;
+                    for (let letra of ['A', 'B', 'C', 'D', 'E']) {
+                        html += `<td style="padding: 10px; border: 1px solid #ccc; text-align: center; width: 60px; height: 60px;">[ ]</td>`;
+                    }
+                    html += '</tr>';
+                }
+
+                html += '</table>';
+                templateContent.innerHTML = html;
+            }
+
+            printTemplate() {
+                const template = document.getElementById('template');
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(template.innerHTML);
+                printWindow.document.close();
+                printWindow.print();
             }
 
             captureImage() {
@@ -328,85 +370,17 @@ E</pre>
                 return imageData;
             }
 
-            async processImage() {
-                if (!this.capturedImage) return;
-
-                this.processBtn.disabled = true;
-                this.processBtn.textContent = 'Processando...';
-
-                try {
-                    // Verificar se o gabarito correto foi preenchido
-                    const gabaritoCorreto = this.parseGabaritoCorreto();
-                    if (gabaritoCorreto.length === 0) {
-                        throw new Error('Por favor, preencha o gabarito correto antes de processar.');
-                    }
-
-                    // Inicializar Tesseract
-                    const worker = await Tesseract.createWorker('por');
-                    
-                    // Configurar parâmetros do Tesseract para melhor reconhecimento
-                    await worker.setParameters({
-                        tessedit_char_whitelist: 'ABCDE',
-                        tessedit_pageseg_mode: '6',
-                        tessjs_create_pdf: '0',
-                        tessjs_create_hocr: '0',
-                        tessjs_create_tsv: '0',
-                        tessjs_create_box: '0',
-                        tessjs_create_unlv: '0',
-                        tessjs_create_osd: '0',
-                        tessedit_ocr_engine_mode: '2',
-                        tessjs_image_dpi: '300',
-                        tessedit_do_invert: '1',
-                        tessedit_char_blacklist: '0123456789'
-                    });
-
-                    // Processar a imagem
-                    const { data: { text } } = await worker.recognize(this.capturedImage);
-                    await worker.terminate();
-
-                    // Processar o texto extraído
-                    const respostas = this.extractAnswers(text);
-                    
-                    if (respostas.length === 0) {
-                        throw new Error('Não foi possível identificar respostas na imagem. Verifique se:\n\n' +
-                            '1. As respostas estão escritas em letras maiúsculas (A, B, C, D, E)\n' +
-                            '2. Cada resposta está em uma linha separada\n' +
-                            '3. A escrita está clara e bem espaçada\n' +
-                            '4. A imagem está bem iluminada e sem sombras');
-                    }
-                    
-                    // Calcular pontuação
-                    const { acertos, total, nota } = this.calculateScore(respostas, gabaritoCorreto);
-                    
-                    // Mostrar resultados
-                    this.showResults(acertos, total, nota);
-                    
-                } catch (error) {
-                    console.error('Erro ao processar imagem:', error);
-                    alert(error.message || 'Erro ao processar a imagem. Verifique se:\n\n' +
-                        '1. O gabarito está bem iluminado\n' +
-                        '2. A escrita está clara e legível\n' +
-                        '3. Cada resposta está em uma linha separada\n' +
-                        '4. O gabarito correto foi preenchido\n' +
-                        '5. A imagem está nítida e sem sombras');
-                } finally {
-                    this.processBtn.disabled = false;
-                    this.processBtn.textContent = 'Processar';
-                }
-            }
-
             extractAnswers(text) {
                 const respostas = [];
                 const lines = text.split('\n');
-                let numero = 1;
                 
+                // Procurar por padrões de marcação (X ou ✓)
                 for (const line of lines) {
-                    // Procurar apenas por letras A-E
-                    const match = line.match(/[A-Ea-e]/i);
+                    const match = line.match(/(\d+)\s*[A-Ea-e]\s*[X✓]/i);
                     if (match) {
-                        const resposta = match[0].toUpperCase();
+                        const numero = parseInt(match[1]);
+                        const resposta = match[0].match(/[A-Ea-e]/i)[0].toUpperCase();
                         respostas.push({ numero, resposta });
-                        numero++;
                     }
                 }
                 
@@ -447,6 +421,72 @@ E</pre>
                 document.getElementById('total').textContent = total;
                 document.getElementById('nota').textContent = nota.toFixed(2);
                 this.results.style.display = 'block';
+            }
+
+            async processImage() {
+                if (!this.capturedImage) return;
+
+                this.processBtn.disabled = true;
+                this.processBtn.textContent = 'Processando...';
+
+                try {
+                    // Verificar se o gabarito correto foi preenchido
+                    const gabaritoCorreto = this.parseGabaritoCorreto();
+                    if (gabaritoCorreto.length === 0) {
+                        throw new Error('Por favor, preencha o gabarito correto antes de processar.');
+                    }
+
+                    // Inicializar Tesseract
+                    const worker = await Tesseract.createWorker('por');
+                    
+                    // Configurar parâmetros do Tesseract para melhor reconhecimento
+                    await worker.setParameters({
+                        tessedit_char_whitelist: '0123456789ABCDEX✓',
+                        tessedit_pageseg_mode: '6',
+                        tessjs_create_pdf: '0',
+                        tessjs_create_hocr: '0',
+                        tessjs_create_tsv: '0',
+                        tessjs_create_box: '0',
+                        tessjs_create_unlv: '0',
+                        tessjs_create_osd: '0',
+                        tessedit_ocr_engine_mode: '2',
+                        tessjs_image_dpi: '300',
+                        tessedit_do_invert: '1'
+                    });
+
+                    // Processar a imagem
+                    const { data: { text } } = await worker.recognize(this.capturedImage);
+                    await worker.terminate();
+
+                    // Processar o texto extraído
+                    const respostas = this.extractAnswers(text);
+                    
+                    if (respostas.length === 0) {
+                        throw new Error('Não foi possível identificar respostas na imagem. Verifique se:\n\n' +
+                            '1. Você usou o template fornecido\n' +
+                            '2. Marcou um X na letra correspondente\n' +
+                            '3. A escrita está clara e bem espaçada\n' +
+                            '4. A imagem está bem iluminada e sem sombras');
+                    }
+                    
+                    // Calcular pontuação
+                    const { acertos, total, nota } = this.calculateScore(respostas, gabaritoCorreto);
+                    
+                    // Mostrar resultados
+                    this.showResults(acertos, total, nota);
+                    
+                } catch (error) {
+                    console.error('Erro ao processar imagem:', error);
+                    alert(error.message || 'Erro ao processar a imagem. Verifique se:\n\n' +
+                        '1. Você usou o template fornecido\n' +
+                        '2. Marcou um X na letra correspondente\n' +
+                        '3. A escrita está clara e legível\n' +
+                        '4. O gabarito correto foi preenchido\n' +
+                        '5. A imagem está nítida e sem sombras');
+                } finally {
+                    this.processBtn.disabled = false;
+                    this.processBtn.textContent = 'Processar';
+                }
             }
         }
 
