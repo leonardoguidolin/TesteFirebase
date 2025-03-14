@@ -260,7 +260,6 @@
                 
                 // Cabeçalho
                 html += '<div style="text-align: center; margin-bottom: 40px;">';
-                html += '<h2 style="font-size: 32px; margin-bottom: 20px;">Gabarito</h2>';
                 html += '<p style="font-size: 20px; color: #666;">Marque apenas uma opção por questão</p>';
                 html += '</div>';
 
@@ -268,22 +267,22 @@
                 html += '<div style="transform: rotate(90deg); transform-origin: top left; margin-left: 400px;">';
                 
                 // Grid de respostas
-                html += '<div style="display: grid; grid-template-columns: 60px repeat(5, 1fr); gap: 10px;">';
+                html += '<div style="display: grid; grid-template-columns: 60px repeat(5, 1fr); gap: 15px;">';
                 
                 // Cabeçalho das colunas
                 html += '<div></div>'; // Espaço para número
                 for (let letra of ['A', 'B', 'C', 'D', 'E']) {
-                    html += `<div style="text-align: center; font-weight: bold; font-size: 24px;">${letra}</div>`;
+                    html += `<div style="text-align: center; font-weight: bold; font-size: 32px;">${letra}</div>`;
                 }
 
                 // Linhas das questões
                 for (let i = 1; i <= 50; i++) {
                     // Número da questão
-                    html += `<div style="text-align: right; padding-right: 10px; font-size: 24px;">${i}</div>`;
+                    html += `<div style="text-align: right; padding-right: 10px; font-size: 32px;">${i}</div>`;
                     
                     // Bolinhas para cada opção
                     for (let j = 0; j < 5; j++) {
-                        html += `<div style="text-align: center; font-size: 24px;">○</div>`;
+                        html += `<div style="text-align: center; font-size: 48px;">○</div>`;
                     }
                 }
 
