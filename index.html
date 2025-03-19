@@ -84,6 +84,7 @@
         const userForm = document.getElementById('userForm');
         const usernameInput = document.getElementById('username');
         const userList = document.getElementById('userList');
+        let currentEditId = null;
 
         // Função para adicionar usuário
         userForm.addEventListener('submit', async (e) => {
@@ -92,19 +93,28 @@
 
             if (username) {
                 try {
-                    // Adiciona o novo usuário à coleção "usuarios"
-                    const docRef = await addDoc(collection(db, "usuarios"), {
-                        name: username
-                    });
-                    console.log("Usuário adicionado com ID: ", docRef.id);
+                    if (currentEditId) {
+                        // Se estiver editando, atualize o nome do usuário
+                        const userRef = doc(db, "usuarios", currentEditId);
+                        await updateDoc(userRef, {
+                            name: username
+                        });
+                        console.log("Usuário atualizado com ID: ", currentEditId);
+                        currentEditId = null; // Limpar o ID de edição
+                    } else {
+                        // Caso contrário, adicione um novo usuário
+                        const docRef = await addDoc(collection(db, "usuarios"), {
+                            name: username
+                        });
+                        console.log("Usuário adicionado com ID: ", docRef.id);
+                    }
 
-                    // Limpar o campo do formulário após adicionar
+                    // Limpar o campo do formulário após adicionar ou editar
                     usernameInput.value = '';
-                    
                     // Recarregar a lista de usuários
                     loadUsers();
                 } catch (error) {
-                    console.error("Erro ao adicionar usuário: ", error);
+                    console.error("Erro ao adicionar/atualizar usuário: ", error);
                 }
             }
         });
@@ -134,19 +144,7 @@
         // Função para editar usuário
         window.editUser = function(id, name) {
             usernameInput.value = name;
-            userForm.onsubmit = async (e) => {
-                e.preventDefault();
-                const updatedName = usernameInput.value.trim();
-                if (updatedName) {
-                    const userRef = doc(db, "usuarios", id);
-                    await updateDoc(userRef, {
-                        name: updatedName
-                    });
-                    console.log("Usuário atualizado!");
-                    usernameInput.value = ''; // Limpar o campo após atualização
-                    loadUsers(); // Recarregar lista de usuários
-                }
-            };
+            currentEditId = id; // Armazenar o ID do usuário que está sendo editado
         };
 
         // Função para excluir usuário
