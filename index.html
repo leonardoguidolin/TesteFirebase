@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Firebase CRUD com Firestore</title>
+    <!-- Adicionando Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -77,27 +79,28 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         button.edit, button.delete {
-            font-size: 12px;
+            font-size: 18px;
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
             margin-left: 5px;
+            background-color: transparent;
+            border: none;
         }
         button.edit {
-            background-color: #ff9800;
-            color: white;
-            border: none;
+            color: #ff9800;
         }
         button.delete {
-            background-color: #f44336;
-            color: white;
-            border: none;
+            color: #f44336;
         }
         button.edit:hover {
-            background-color: #fb8c00;
+            color: #fb8c00;
         }
         button.delete:hover {
-            background-color: #e53935;
+            color: #e53935;
+        }
+        .fa {
+            font-size: 18px;
         }
     </style>
 </head>
@@ -190,8 +193,12 @@
                     const li = document.createElement('li');
                     li.innerHTML = `
                         ${user.name}
-                        <button class="edit" onclick="editUser('${doc.id}', '${user.name}')">Editar</button>
-                        <button class="delete" onclick="deleteUser('${doc.id}')">Excluir</button>
+                        <button class="edit" onclick="editUser('${doc.id}', '${user.name}')">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button class="delete" onclick="deleteUser('${doc.id}')">
+                            <i class="fa fa-trash"></i>
+                        </button>
                     `;
                     userList.appendChild(li);
                 });
@@ -223,3 +230,4 @@
     </script>
 </body>
 </html>
+
