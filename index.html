@@ -67,11 +67,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
-        // Configuração do Firebase
+        // Configuração do Firebase (utilizando o projeto correto)
         const firebaseConfig = {
             apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
-            authDomain: "bancoteste-a09ee.firebaseapp.com",
-            projectId: "bancoteste-a09ee", // Certifique-se de que o Project ID esteja correto
+            authDomain: "bancoteste-a09ee.firebaseapp.com",  // Nome do projeto no Firebase
+            projectId: "bancoteste-a09ee",  // Nome do projeto no Firebase
             storageBucket: "bancoteste-a09ee.firebasestorage.app",
             messagingSenderId: "938322850076",
             appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9"
@@ -92,8 +92,8 @@
 
             if (username) {
                 try {
-                    // Adiciona o novo usuário à coleção "BancoFuncionando"
-                    const docRef = await addDoc(collection(db, "BancoFuncionando"), {
+                    // Adiciona o novo usuário à coleção "usuarios"
+                    const docRef = await addDoc(collection(db, "usuarios"), {
                         name: username
                     });
                     console.log("Usuário adicionado com ID: ", docRef.id);
@@ -114,8 +114,8 @@
             userList.innerHTML = ''; // Limpar a lista de usuários antes de recarregar
 
             try {
-                // Obtém todos os usuários da coleção "BancoFuncionando"
-                const querySnapshot = await getDocs(collection(db, "BancoFuncionando"));
+                // Obtém todos os usuários da coleção "usuarios"
+                const querySnapshot = await getDocs(collection(db, "usuarios"));
                 querySnapshot.forEach((doc) => {
                     const user = doc.data();
                     const li = document.createElement('li');
@@ -138,7 +138,7 @@
                 e.preventDefault();
                 const updatedName = usernameInput.value.trim();
                 if (updatedName) {
-                    const userRef = doc(db, "BancoFuncionando", id);
+                    const userRef = doc(db, "usuarios", id);
                     await updateDoc(userRef, {
                         name: updatedName
                     });
@@ -152,7 +152,7 @@
         // Função para excluir usuário
         window.deleteUser = async function(id) {
             try {
-                const userRef = doc(db, "BancoFuncionando", id);
+                const userRef = doc(db, "usuarios", id);
                 await deleteDoc(userRef);
                 console.log("Usuário excluído!");
                 loadUsers(); // Recarregar lista de usuários
