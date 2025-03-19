@@ -1,327 +1,168 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitor de Texto por Câmera</title>
-    <script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'></script>
+    <title>Firebase CRUD com Firestore</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f0f0;
+            margin: 20px;
         }
-
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        #video {
-            width: 100%;
-            max-width: 640px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-
-        #canvas {
-            display: none;
-        }
-
-        #processedCanvas {
-            display: block;
-            max-width: 320px;
-            margin: 10px auto;
-            border: 1px solid #ddd;
-        }
-
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 10px 0;
-            font-size: 16px;
-            width: 100%;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        #resultado {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            min-height: 100px;
-            background-color: white;
-            font-size: 24px;
-            text-align: center;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 10px 0;
-        }
-
-        .config-section {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .config-section label {
-            display: block;
-            margin-bottom: 5px;
+        label {
             font-weight: bold;
         }
-
-        .config-section input {
-            width: 60px;
-            padding: 8px;
-            font-size: 16px;
-            text-align: center;
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            max-width: 300px;
+            display: block;
+        }
+        .user-list {
+            margin-top: 20px;
+        }
+        .user-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .user-list li {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f0f0f0;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
         }
-
-        .guide {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            border-left: 4px solid #4CAF50;
+        button.delete {
+            background-color: red;
+            color: white;
         }
-
-        .guide h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-
-        .guide ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-
-        .guide li {
-            margin: 5px 0;
-            color: #34495e;
+        button.edit {
+            background-color: orange;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Leitor de Texto por Câmera</h1>
-        
-        <div class="guide">
-            <h3>Como usar:</h3>
-            <ul>
-                <li>Escreva as letras (A, B, C, D, E) em CAIXA ALTA</li>
-                <li>Use papel branco e caneta preta ou azul escura</li>
-                <li>Escreva cada letra separadamente e bem definida</li>
-                <li>Mantenha a câmera estável e bem iluminada</li>
-                <li>Centralize o texto na imagem</li>
-            </ul>
-        </div>
+    <h1>Firebase CRUD - Exemplo de Gerenciamento de Usuários</h1>
 
-        <div class="config-section">
-            <label for="qtdLetras">Quantidade de letras:</label>
-            <input type="number" id="qtdLetras" min="1" max="50" value="1">
-        </div>
+    <!-- Formulário de inserção e atualização -->
+    <form id="userForm">
+        <label for="username">Nome do Usuário:</label>
+        <input type="text" id="username" placeholder="Digite o nome do usuário">
+        <button type="submit">Adicionar Usuário</button>
+    </form>
 
-        <video id="video" autoplay playsinline></video>
-        <canvas id="canvas"></canvas>
-        <canvas id="processedCanvas"></canvas>
-        
-        <div>
-            <button id="captureButton">Capturar e Ler Texto</button>
-        </div>
-
-        <div class="loading" id="loading">
-            Processando imagem... Por favor, aguarde.
-        </div>
-
-        <div>
-            <h2>Texto Detectado:</h2>
-            <div id="resultado"></div>
-        </div>
+    <div class="user-list">
+        <h2>Lista de Usuários</h2>
+        <ul id="userList">
+            <!-- Usuários serão listados aqui -->
+        </ul>
     </div>
 
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const processedCanvas = document.getElementById('processedCanvas');
-        const captureButton = document.getElementById('captureButton');
-        const resultado = document.getElementById('resultado');
-        const loading = document.getElementById('loading');
-        const ctx = canvas.getContext('2d');
-        const processedCtx = processedCanvas.getContext('2d');
+    <!-- Firebase SDKs versão 11.x -->
+    <script type="module">
+        // Importa as funções necessárias do Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
-        // Inicializar a câmera
-        async function initCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                });
-                video.srcObject = stream;
-            } catch (err) {
-                console.error('Erro ao acessar a câmera:', err);
-                alert('Erro ao acessar a câmera. Verifique se você deu as permissões necessárias.');
-            }
-        }
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
+            authDomain: "bancoteste-a09ee.firebaseapp.com",
+            projectId: "bancoteste-a09ee", // Certifique-se de que o Project ID esteja correto
+            storageBucket: "bancoteste-a09ee.firebasestorage.app",
+            messagingSenderId: "938322850076",
+            appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9"
+        };
 
-        function preprocessImage(imageData) {
-            const data = imageData.data;
-            const width = imageData.width;
-            const height = imageData.height;
-            
-            // Converter para escala de cinza e aumentar contraste
-            for (let i = 0; i < data.length; i += 4) {
-                // Usar pesos específicos para melhor conversão para escala de cinza
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                let gray = (r * 0.299 + g * 0.587 + b * 0.114);
-                
-                // Aumentar contraste
-                gray = gray < 128 ? gray * 0.8 : gray * 1.2;
-                
-                // Aplicar threshold adaptativo
-                const threshold = 160;
-                const value = gray > threshold ? 255 : 0;
-                
-                data[i] = data[i + 1] = data[i + 2] = value;
-            }
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-            // Aplicar dilatação para conectar partes das letras
-            const tempData = new Uint8ClampedArray(data);
-            for (let y = 1; y < height - 1; y++) {
-                for (let x = 1; x < width - 1; x++) {
-                    const idx = (y * width + x) * 4;
-                    const neighbors = [
-                        tempData[idx - width * 4],     // top
-                        tempData[idx + width * 4],     // bottom
-                        tempData[idx - 4],             // left
-                        tempData[idx + 4],             // right
-                    ];
+        const userForm = document.getElementById('userForm');
+        const usernameInput = document.getElementById('username');
+        const userList = document.getElementById('userList');
+
+        // Função para adicionar usuário
+        userForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evitar o envio padrão do formulário
+            const username = usernameInput.value.trim();
+
+            if (username) {
+                try {
+                    // Adiciona o novo usuário à coleção "BancoFuncionando"
+                    const docRef = await addDoc(collection(db, "BancoFuncionando"), {
+                        name: username
+                    });
+                    console.log("Usuário adicionado com ID: ", docRef.id);
+
+                    // Limpar o campo do formulário após adicionar
+                    usernameInput.value = '';
                     
-                    if (neighbors.some(v => v === 0)) {
-                        data[idx] = data[idx + 1] = data[idx + 2] = 0;
-                    }
+                    // Recarregar a lista de usuários
+                    loadUsers();
+                } catch (error) {
+                    console.error("Erro ao adicionar usuário: ", error);
                 }
-            }
-
-            return imageData;
-        }
-
-        // Capturar e processar imagem
-        captureButton.addEventListener('click', async () => {
-            loading.style.display = 'block';
-            resultado.textContent = '';
-
-            // Configurar canvas com o tamanho do vídeo
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            // Configurar canvas processado
-            processedCanvas.width = canvas.width / 2;
-            processedCanvas.height = canvas.height / 2;
-            
-            // Capturar frame do vídeo
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Pré-processamento da imagem
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const processedImageData = preprocessImage(imageData);
-            ctx.putImageData(processedImageData, 0, 0);
-
-            // Mostrar imagem processada
-            processedCtx.drawImage(canvas, 0, 0, processedCanvas.width, processedCanvas.height);
-
-            try {
-                // Processar imagem com Tesseract.js
-                const { data: { text } } = await Tesseract.recognize(
-                    canvas,
-                    'eng',
-                    { 
-                        logger: m => console.log(m),
-                        tessedit_char_whitelist: 'ABCDE',
-                        tessedit_ocr_engine_mode: 2,
-                        tessjs_create_hocr: '0',
-                        tessjs_create_tsv: '0',
-                        tessedit_pageseg_mode: '6',
-                        tessedit_minimal_confidence: '60',
-                        textord_heavy_nr: '1',
-                        language_model_penalty_non_freq_dict_word: '1.5',
-                        language_model_penalty_non_dict_word: '1.5',
-                        textord_min_linesize: '2.5'
-                    }
-                );
-
-                let processedText = text.trim()
-                    .toUpperCase()
-                    .split('')
-                    .filter(char => 'ABCDE'.includes(char))
-                    .join('');
-
-                const qtdEsperada = parseInt(document.getElementById('qtdLetras').value);
-
-                if (processedText.length !== qtdEsperada) {
-                    // Tentar novamente com configurações diferentes
-                    const result2 = await Tesseract.recognize(
-                        canvas,
-                        'eng',
-                        { 
-                            tessedit_char_whitelist: 'ABCDE',
-                            tessedit_ocr_engine_mode: 1,
-                            tessedit_pageseg_mode: '10'
-                        }
-                    );
-
-                    const processedText2 = result2.data.text.trim()
-                        .toUpperCase()
-                        .split('')
-                        .filter(char => 'ABCDE'.includes(char))
-                        .join('');
-
-                    if (Math.abs(qtdEsperada - processedText2.length) < Math.abs(qtdEsperada - processedText.length)) {
-                        processedText = processedText2;
-                    }
-                }
-
-                if (processedText.length > qtdEsperada) {
-                    processedText = processedText.substring(0, qtdEsperada);
-                }
-
-                if (processedText.length === 0) {
-                    resultado.textContent = 'Nenhuma letra detectada. Tente novamente seguindo as instruções acima.';
-                } else if (processedText.length < qtdEsperada) {
-                    resultado.textContent = `Detectado: ${processedText} (${processedText.length}/${qtdEsperada} letras)
-                        Tente novamente com letras mais claras.`;
-                } else {
-                    resultado.textContent = processedText;
-                }
-            } catch (err) {
-                console.error('Erro ao processar imagem:', err);
-                resultado.textContent = 'Erro ao processar imagem';
-            } finally {
-                loading.style.display = 'none';
             }
         });
 
-        // Iniciar câmera quando a página carregar
-        initCamera();
+        // Função para carregar os usuários
+        async function loadUsers() {
+            userList.innerHTML = ''; // Limpar a lista de usuários antes de recarregar
+
+            try {
+                // Obtém todos os usuários da coleção "BancoFuncionando"
+                const querySnapshot = await getDocs(collection(db, "BancoFuncionando"));
+                querySnapshot.forEach((doc) => {
+                    const user = doc.data();
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        ${user.name}
+                        <button class="edit" onclick="editUser('${doc.id}', '${user.name}')">Editar</button>
+                        <button class="delete" onclick="deleteUser('${doc.id}')">Excluir</button>
+                    `;
+                    userList.appendChild(li);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar usuários: ", error);
+            }
+        }
+
+        // Função para editar usuário
+        window.editUser = function(id, name) {
+            usernameInput.value = name;
+            userForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const updatedName = usernameInput.value.trim();
+                if (updatedName) {
+                    const userRef = doc(db, "BancoFuncionando", id);
+                    await updateDoc(userRef, {
+                        name: updatedName
+                    });
+                    console.log("Usuário atualizado!");
+                    usernameInput.value = ''; // Limpar o campo após atualização
+                    loadUsers(); // Recarregar lista de usuários
+                }
+            };
+        };
+
+        // Função para excluir usuário
+        window.deleteUser = async function(id) {
+            try {
+                const userRef = doc(db, "BancoFuncionando", id);
+                await deleteDoc(userRef);
+                console.log("Usuário excluído!");
+                loadUsers(); // Recarregar lista de usuários
+            } catch (error) {
+                console.error("Erro ao excluir usuário: ", error);
+            }
+        };
+
+        // Carregar os usuários ao carregar a página
+        window.onload = loadUsers;
     </script>
 </body>
-</html> 
+</html>
