@@ -1,137 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Sistema de Projetos de Alunos</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-
- const firebaseConfig = {
-            apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
-            authDomain: "bancoteste-a09ee.firebaseapp.com",  // Nome do projeto no Firebase
-            projectId: "bancoteste-a09ee",  // Nome do projeto no Firebase
-            storageBucket: "bancoteste-a09ee.firebasestorage.app",
-            messagingSenderId: "938322850076",
-            appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9"
-        };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
-    const adminEmail = "admin@email.com";
-
-    const loginSection = document.getElementById("loginSection");
-    const adminPanel = document.getElementById("adminPanel");
-    const publicView = document.getElementById("publicView");
-
-    onAuthStateChanged(auth, async user => {
-      if (user?.email === adminEmail) {
-        loginSection.style.display = "none";
-        adminPanel.style.display = "block";
-        await carregarAlunos();
-      } else {
-        loginSection.style.display = "block";
-        adminPanel.style.display = "none";
-      }
-      await carregarProjetos();
-    });
-
-    window.login = async () => {
-      const email = document.getElementById("email").value;
-      const senha = document.getElementById("password").value;
-      try {
-        await signInWithEmailAndPassword(auth, email, senha);
-      } catch (e) {
-        alert("Erro ao logar: " + e.message);
-      }
-    };
-
-    window.logout = () => signOut(auth);
-
-    document.getElementById("formAluno").addEventListener("submit", async e => {
-      e.preventDefault();
-      const nome = document.getElementById("nomeAluno").value;
-      const email = document.getElementById("emailAluno").value;
-
-      await addDoc(collection(db, "usuarios"), {
-        nome,
-        email,
-        projetos: []
-      });
-
-      alert("Aluno cadastrado!");
-      document.getElementById("formAluno").reset();
-      await carregarAlunos();
-    });
-
-    document.getElementById("formProjeto").addEventListener("submit", async e => {
-      e.preventDefault();
-      const titulo = document.getElementById("tituloProjeto").value;
-      const descricao = document.getElementById("descricaoProjeto").value;
-      const videoUrl = document.getElementById("videoUrl").value;
-      const alunosSelecionados = [...document.getElementById("alunosSelect").selectedOptions].map(opt => opt.value);
-
-      const projetoRef = await addDoc(collection(db, "projetos"), {
-        titulo,
-        descricao,
-        videoUrl,
-        pdfUrl: "https://exemplo.com", // você pode implementar upload com Firebase Storage depois
-        alunos: alunosSelecionados
-      });
-
-      for (const alunoId of alunosSelecionados) {
-        const alunoRef = doc(db, "usuarios", alunoId);
-        const alunoSnap = await getDoc(alunoRef);
-        if (alunoSnap.exists()) {
-          const dados = alunoSnap.data();
-          await updateDoc(alunoRef, {
-            projetos: [...(dados.projetos || []), projetoRef.id]
-          });
-        }
-      }
-
-      alert("Projeto cadastrado!");
-      document.getElementById("formProjeto").reset();
-      await carregarProjetos();
-    });
-
-    async function carregarAlunos() {
-      const alunos = await getDocs(collection(db, "usuarios"));
-      const select = document.getElementById("alunosSelect");
-      select.innerHTML = "";
-      alunos.forEach(doc => {
-        const aluno = doc.data();
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = aluno.nome;
-        select.appendChild(option);
-      });
-    }
-
-    async function carregarProjetos() {
-      const lista = document.getElementById("listaProjetos");
-      lista.innerHTML = "";
-
-      const projetos = await getDocs(collection(db, "projetos"));
-      for (const docSnap of projetos.docs) {
-        const proj = docSnap.data();
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${proj.titulo}</strong><br>${proj.descricao}<br>
-          <a href="${proj.videoUrl}" target="_blank">Ver vídeo</a>`;
-
-        const listaAlunos = await Promise.all(proj.alunos.map(async id => {
-          const aluno = await getDoc(doc(db, "usuarios", id));
-          return aluno.exists() ? aluno.data().nome : "Desconhecido";
-        }));
-        li.innerHTML += `<br><em>Participantes:</em> ${listaAlunos.join(", ")}`;
-        lista.appendChild(li);
-      }
-    }
-  </script>
-
   <style>
     body {
       font-family: sans-serif;
@@ -163,8 +34,8 @@
 
   <!-- LOGIN -->
   <div id="loginSection">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Senha">
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Senha" />
     <button onclick="login()">Entrar</button>
   </div>
 
@@ -175,16 +46,16 @@
 
     <form id="formAluno">
       <h3>Cadastrar Aluno</h3>
-      <input type="text" id="nomeAluno" placeholder="Nome do aluno" required>
-      <input type="email" id="emailAluno" placeholder="Email do aluno" required>
+      <input type="text" id="nomeAluno" placeholder="Nome do aluno" required />
+      <input type="email" id="emailAluno" placeholder="Email do aluno" required />
       <button type="submit">Salvar Aluno</button>
     </form>
 
     <form id="formProjeto">
       <h3>Cadastrar Projeto</h3>
-      <input type="text" id="tituloProjeto" placeholder="Título" required>
+      <input type="text" id="tituloProjeto" placeholder="Título" required />
       <textarea id="descricaoProjeto" placeholder="Descrição"></textarea>
-      <input type="text" id="videoUrl" placeholder="Link do vídeo (YouTube)">
+      <input type="text" id="videoUrl" placeholder="Link do vídeo (YouTube)" />
       <label>Selecionar Alunos</label>
       <select id="alunosSelect" multiple></select>
       <button type="submit">Salvar Projeto</button>
@@ -196,5 +67,158 @@
     <h2>Projetos Disponíveis</h2>
     <ul id="listaProjetos"></ul>
   </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+    } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
+      authDomain: "bancoteste-a09ee.firebaseapp.com",
+      projectId: "bancoteste-a09ee",
+      storageBucket: "bancoteste-a09ee.appspot.com", // corrigido aqui
+      messagingSenderId: "938322850076",
+      appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const adminEmail = "admin@email.com";
+
+    const loginSection = document.getElementById("loginSection");
+    const adminPanel = document.getElementById("adminPanel");
+    const publicView = document.getElementById("publicView");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user?.email === adminEmail) {
+        loginSection.style.display = "none";
+        adminPanel.style.display = "block";
+        publicView.style.display = "none";
+        await carregarAlunos();
+      } else {
+        loginSection.style.display = "block";
+        adminPanel.style.display = "none";
+        publicView.style.display = "block";
+      }
+      await carregarProjetos();
+    });
+
+    window.login = async () => {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, senha);
+      } catch (e) {
+        alert("Erro ao logar: " + e.message);
+      }
+    };
+
+    window.logout = () => signOut(auth);
+
+    document.getElementById("formAluno").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nome = document.getElementById("nomeAluno").value;
+      const email = document.getElementById("emailAluno").value;
+
+      await addDoc(collection(db, "usuarios"), {
+        nome,
+        email,
+        projetos: [],
+      });
+
+      alert("Aluno cadastrado!");
+      e.target.reset();
+      await carregarAlunos();
+    });
+
+    document.getElementById("formProjeto").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById("tituloProjeto").value;
+      const descricao = document.getElementById("descricaoProjeto").value;
+      const videoUrl = document.getElementById("videoUrl").value;
+      const alunosSelecionados = [...document.getElementById("alunosSelect").selectedOptions].map(
+        (opt) => opt.value
+      );
+
+      const projetoRef = await addDoc(collection(db, "projetos"), {
+        titulo,
+        descricao,
+        videoUrl,
+        pdfUrl: "https://exemplo.com", // você pode implementar upload com Firebase Storage depois
+        alunos: alunosSelecionados,
+      });
+
+      for (const alunoId of alunosSelecionados) {
+        const alunoRef = doc(db, "usuarios", alunoId);
+        const alunoSnap = await getDoc(alunoRef);
+        if (alunoSnap.exists()) {
+          const dados = alunoSnap.data();
+          await updateDoc(alunoRef, {
+            projetos: [...(dados.projetos || []), projetoRef.id],
+          });
+        }
+      }
+
+      alert("Projeto cadastrado!");
+      e.target.reset();
+      await carregarProjetos();
+    });
+
+    async function carregarAlunos() {
+      const alunos = await getDocs(collection(db, "usuarios"));
+      const select = document.getElementById("alunosSelect");
+      select.innerHTML = "";
+      alunos.forEach((doc) => {
+        const aluno = doc.data();
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = aluno.nome;
+        select.appendChild(option);
+      });
+    }
+
+    async function carregarProjetos() {
+      const lista = document.getElementById("listaProjetos");
+      lista.innerHTML = "";
+
+      const projetos = await getDocs(collection(db, "projetos"));
+      for (const docSnap of projetos.docs) {
+        const proj = docSnap.data();
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${proj.titulo}</strong><br>${proj.descricao}<br>
+          ${proj.videoUrl ? `<a href="${proj.videoUrl}" target="_blank">Ver vídeo</a>` : ""}`;
+
+        const listaAlunos = proj.alunos && proj.alunos.length > 0
+          ? await Promise.all(
+              proj.alunos.map(async (id) => {
+                const aluno = await getDoc(doc(db, "usuarios", id));
+                return aluno.exists() ? aluno.data().nome : "Desconhecido";
+              })
+            )
+          : [];
+
+        if (listaAlunos.length > 0) {
+          li.innerHTML += `<br><em>Participantes:</em> ${listaAlunos.join(", ")}`;
+        }
+        lista.appendChild(li);
+      }
+    }
+  </script>
 </body>
 </html>
