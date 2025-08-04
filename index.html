@@ -34,15 +34,15 @@
 
   <!-- LOGIN -->
   <div id="loginSection">
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Senha" />
-    <button onclick="login()">Entrar</button>
+    <input type="text" id="loginUser" placeholder="Usuário" />
+    <input type="password" id="loginPass" placeholder="Senha" />
+    <button id="btnLogin">Entrar</button>
   </div>
 
   <!-- ADMIN -->
-  <div id="adminPanel" style="display: none;">
+  <div id="adminPanel" style="display:none;">
     <h2>Painel do Admin</h2>
-    <button onclick="logout()">Sair</button>
+    <button id="btnLogout">Sair</button>
 
     <form id="formAluno">
       <h3>Cadastrar Aluno</h3>
@@ -79,108 +79,136 @@
       getDocs,
       updateDoc,
     } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
-    import {
-      getAuth,
-      signInWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged,
-    } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
+    // Config Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
       authDomain: "bancoteste-a09ee.firebaseapp.com",
       projectId: "bancoteste-a09ee",
-      storageBucket: "bancoteste-a09ee.appspot.com", // corrigido aqui
+      storageBucket: "bancoteste-a09ee.appspot.com",
       messagingSenderId: "938322850076",
       appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9",
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const auth = getAuth(app);
 
-    const adminEmail = "admin@email.com";
+    // Login fixo (hardcoded)
+    const USER_ADMIN = "admin";
+    const PASS_ADMIN = "123456";
 
     const loginSection = document.getElementById("loginSection");
     const adminPanel = document.getElementById("adminPanel");
     const publicView = document.getElementById("publicView");
 
-    onAuthStateChanged(auth, async (user) => {
-      if (user?.email === adminEmail) {
+    // Estado simples do login
+    let loggedIn = false;
+
+    // Função para mostrar ou esconder telas
+    function atualizarVisibilidade() {
+      if (loggedIn) {
         loginSection.style.display = "none";
         adminPanel.style.display = "block";
         publicView.style.display = "none";
-        await carregarAlunos();
       } else {
         loginSection.style.display = "block";
         adminPanel.style.display = "none";
         publicView.style.display = "block";
       }
-      await carregarProjetos();
+    }
+
+    // Login simples
+    document.getElementById("btnLogin").addEventListener("click", () => {
+      const user = document.getElementById("loginUser").value.trim();
+      const pass = document.getElementById("loginPass").value;
+
+      if (user === USER_ADMIN && pass === PASS_ADMIN) {
+        loggedIn = true;
+        atualizarVisibilidade();
+        carregarAlunos();
+        carregarProjetos();
+      } else {
+        alert("Usuário ou senha incorretos!");
+      }
     });
 
-    window.login = async () => {
-      const email = document.getElementById("email").value;
-      const senha = document.getElementById("password").value;
-      try {
-        await signInWithEmailAndPassword(auth, email, senha);
-      } catch (e) {
-        alert("Erro ao logar: " + e.message);
-      }
-    };
+    // Logout
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      loggedIn = false;
+      atualizarVisibilidade();
+      carregarProjetos();
+    });
 
-    window.logout = () => signOut(auth);
-
+    // Cadastrar aluno
     document.getElementById("formAluno").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const nome = document.getElementById("nomeAluno").value;
-      const email = document.getElementById("emailAluno").value;
+      const nome = document.getElementById("nomeAluno").value.trim();
+      const email = document.getElementById("emailAluno").value.trim();
 
-      await addDoc(collection(db, "usuarios"), {
-        nome,
-        email,
-        projetos: [],
-      });
-
-      alert("Aluno cadastrado!");
-      e.target.reset();
-      await carregarAlunos();
-    });
-
-    document.getElementById("formProjeto").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const titulo = document.getElementById("tituloProjeto").value;
-      const descricao = document.getElementById("descricaoProjeto").value;
-      const videoUrl = document.getElementById("videoUrl").value;
-      const alunosSelecionados = [...document.getElementById("alunosSelect").selectedOptions].map(
-        (opt) => opt.value
-      );
-
-      const projetoRef = await addDoc(collection(db, "projetos"), {
-        titulo,
-        descricao,
-        videoUrl,
-        pdfUrl: "https://exemplo.com", // você pode implementar upload com Firebase Storage depois
-        alunos: alunosSelecionados,
-      });
-
-      for (const alunoId of alunosSelecionados) {
-        const alunoRef = doc(db, "usuarios", alunoId);
-        const alunoSnap = await getDoc(alunoRef);
-        if (alunoSnap.exists()) {
-          const dados = alunoSnap.data();
-          await updateDoc(alunoRef, {
-            projetos: [...(dados.projetos || []), projetoRef.id],
-          });
-        }
+      if (!nome || !email) {
+        alert("Preencha todos os campos do aluno.");
+        return;
       }
 
-      alert("Projeto cadastrado!");
-      e.target.reset();
-      await carregarProjetos();
+      try {
+        await addDoc(collection(db, "usuarios"), {
+          nome,
+          email,
+          projetos: [],
+        });
+        alert("Aluno cadastrado!");
+        e.target.reset();
+        carregarAlunos();
+      } catch (err) {
+        alert("Erro ao cadastrar aluno: " + err.message);
+      }
     });
 
+    // Cadastrar projeto
+    document.getElementById("formProjeto").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById("tituloProjeto").value.trim();
+      const descricao = document.getElementById("descricaoProjeto").value.trim();
+      const videoUrl = document.getElementById("videoUrl").value.trim();
+      const alunosSelecionados = [...document.getElementById("alunosSelect").selectedOptions].map(opt => opt.value);
+
+      if (!titulo) {
+        alert("Título do projeto é obrigatório.");
+        return;
+      }
+
+      try {
+        const projetoRef = await addDoc(collection(db, "projetos"), {
+          titulo,
+          descricao,
+          videoUrl,
+          pdfUrl: "https://exemplo.com", // pode implementar upload depois
+          alunos: alunosSelecionados,
+        });
+
+        // Atualiza os projetos dos alunos
+        for (const alunoId of alunosSelecionados) {
+          const alunoRef = doc(db, "usuarios", alunoId);
+          const alunoSnap = await getDoc(alunoRef);
+          if (alunoSnap.exists()) {
+            const dados = alunoSnap.data();
+            await updateDoc(alunoRef, {
+              projetos: [...(dados.projetos || []), projetoRef.id],
+            });
+          }
+        }
+
+        alert("Projeto cadastrado!");
+        e.target.reset();
+        carregarProjetos();
+      } catch (err) {
+        alert("Erro ao cadastrar projeto: " + err.message);
+      }
+    });
+
+    // Carregar alunos para o select (só se admin estiver logado)
     async function carregarAlunos() {
+      if (!loggedIn) return;
       const alunos = await getDocs(collection(db, "usuarios"));
       const select = document.getElementById("alunosSelect");
       select.innerHTML = "";
@@ -193,6 +221,7 @@
       });
     }
 
+    // Carregar projetos para exibir público ou admin
     async function carregarProjetos() {
       const lista = document.getElementById("listaProjetos");
       lista.innerHTML = "";
@@ -204,21 +233,23 @@
         li.innerHTML = `<strong>${proj.titulo}</strong><br>${proj.descricao}<br>
           ${proj.videoUrl ? `<a href="${proj.videoUrl}" target="_blank">Ver vídeo</a>` : ""}`;
 
-        const listaAlunos = proj.alunos && proj.alunos.length > 0
-          ? await Promise.all(
-              proj.alunos.map(async (id) => {
-                const aluno = await getDoc(doc(db, "usuarios", id));
-                return aluno.exists() ? aluno.data().nome : "Desconhecido";
-              })
-            )
-          : [];
-
-        if (listaAlunos.length > 0) {
-          li.innerHTML += `<br><em>Participantes:</em> ${listaAlunos.join(", ")}`;
+        if (proj.alunos && proj.alunos.length > 0) {
+          const nomesAlunos = await Promise.all(
+            proj.alunos.map(async (id) => {
+              const alunoSnap = await getDoc(doc(db, "usuarios", id));
+              return alunoSnap.exists() ? alunoSnap.data().nome : "Desconhecido";
+            })
+          );
+          li.innerHTML += `<br><em>Participantes:</em> ${nomesAlunos.join(", ")}`;
         }
+
         lista.appendChild(li);
       }
     }
+
+    // Mostrar só a view pública inicialmente
+    atualizarVisibilidade();
+    carregarProjetos();
   </script>
 </body>
 </html>
