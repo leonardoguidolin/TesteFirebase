@@ -1,239 +1,200 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase CRUD com Firestore</title>
-    <!-- Adicionando Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f7fc;
-            color: #333;
+  <meta charset="UTF-8">
+  <title>Sistema de Projetos de Alunos</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_DOMINIO.firebaseapp.com",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_BUCKET.appspot.com",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const adminEmail = "admin@email.com";
+
+    const loginSection = document.getElementById("loginSection");
+    const adminPanel = document.getElementById("adminPanel");
+    const publicView = document.getElementById("publicView");
+
+    onAuthStateChanged(auth, async user => {
+      if (user?.email === adminEmail) {
+        loginSection.style.display = "none";
+        adminPanel.style.display = "block";
+        await carregarAlunos();
+      } else {
+        loginSection.style.display = "block";
+        adminPanel.style.display = "none";
+      }
+      await carregarProjetos();
+    });
+
+    window.login = async () => {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, senha);
+      } catch (e) {
+        alert("Erro ao logar: " + e.message);
+      }
+    };
+
+    window.logout = () => signOut(auth);
+
+    document.getElementById("formAluno").addEventListener("submit", async e => {
+      e.preventDefault();
+      const nome = document.getElementById("nomeAluno").value;
+      const email = document.getElementById("emailAluno").value;
+
+      await addDoc(collection(db, "usuarios"), {
+        nome,
+        email,
+        projetos: []
+      });
+
+      alert("Aluno cadastrado!");
+      document.getElementById("formAluno").reset();
+      await carregarAlunos();
+    });
+
+    document.getElementById("formProjeto").addEventListener("submit", async e => {
+      e.preventDefault();
+      const titulo = document.getElementById("tituloProjeto").value;
+      const descricao = document.getElementById("descricaoProjeto").value;
+      const videoUrl = document.getElementById("videoUrl").value;
+      const alunosSelecionados = [...document.getElementById("alunosSelect").selectedOptions].map(opt => opt.value);
+
+      const projetoRef = await addDoc(collection(db, "projetos"), {
+        titulo,
+        descricao,
+        videoUrl,
+        pdfUrl: "https://exemplo.com", // você pode implementar upload com Firebase Storage depois
+        alunos: alunosSelecionados
+      });
+
+      for (const alunoId of alunosSelecionados) {
+        const alunoRef = doc(db, "usuarios", alunoId);
+        const alunoSnap = await getDoc(alunoRef);
+        if (alunoSnap.exists()) {
+          const dados = alunoSnap.data();
+          await updateDoc(alunoRef, {
+            projetos: [...(dados.projetos || []), projetoRef.id]
+          });
         }
-        h1 {
-            text-align: center;
-            background-color: #4CAF50;
-            color: white;
-            padding: 20px 0;
-            margin: 0;
-        }
-        .container {
-            width: 90%;
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        label {
-            font-weight: bold;
-            margin-bottom: 8px;
-            display: block;
-        }
-        input[type="text"], button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-        input[type="text"] {
-            font-size: 16px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .user-list {
-            margin-top: 20px;
-        }
-        .user-list h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            display: flex;
-            justify-content: space-between;
-            background-color: #f9f9f9;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .action-buttons {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-        }
-        button.edit, button.delete {
-            font-size: 18px;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-left: 5px;
-            background-color: transparent;
-            border: none;
-        }
-        button.edit {
-            color: #ff9800;
-        }
-        button.delete {
-            color: #f44336;
-        }
-        button.edit:hover {
-            color: #fb8c00;
-        }
-        button.delete:hover {
-            color: #e53935;
-        }
-        .fa {
-            font-size: 18px;
-        }
-    </style>
+      }
+
+      alert("Projeto cadastrado!");
+      document.getElementById("formProjeto").reset();
+      await carregarProjetos();
+    });
+
+    async function carregarAlunos() {
+      const alunos = await getDocs(collection(db, "usuarios"));
+      const select = document.getElementById("alunosSelect");
+      select.innerHTML = "";
+      alunos.forEach(doc => {
+        const aluno = doc.data();
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = aluno.nome;
+        select.appendChild(option);
+      });
+    }
+
+    async function carregarProjetos() {
+      const lista = document.getElementById("listaProjetos");
+      lista.innerHTML = "";
+
+      const projetos = await getDocs(collection(db, "projetos"));
+      for (const docSnap of projetos.docs) {
+        const proj = docSnap.data();
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${proj.titulo}</strong><br>${proj.descricao}<br>
+          <a href="${proj.videoUrl}" target="_blank">Ver vídeo</a>`;
+
+        const listaAlunos = await Promise.all(proj.alunos.map(async id => {
+          const aluno = await getDoc(doc(db, "usuarios", id));
+          return aluno.exists() ? aluno.data().nome : "Desconhecido";
+        }));
+        li.innerHTML += `<br><em>Participantes:</em> ${listaAlunos.join(", ")}`;
+        lista.appendChild(li);
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    form {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    ul { list-style: none; padding: 0; }
+    li { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 6px; }
+  </style>
 </head>
 <body>
-    <h1>Gerenciamento de Usuários</h1>
+  <h1>Sistema de Projetos Acadêmicos</h1>
 
-    <div class="container">
-        <!-- Formulário de inserção e atualização -->
-        <form id="userForm">
-            <label for="username">Nome do Usuário:</label>
-            <input type="text" id="username" placeholder="Digite o nome do usuário" required>
-            <button type="submit">Adicionar/Editar Usuário</button>
-        </form>
-    </div>
+  <!-- LOGIN -->
+  <div id="loginSection">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Senha">
+    <button onclick="login()">Entrar</button>
+  </div>
 
-    <div class="container user-list">
-        <h2>Lista de Usuários</h2>
-        <ul id="userList">
-            <!-- Usuários serão listados aqui -->
-        </ul>
-    </div>
+  <!-- ADMIN -->
+  <div id="adminPanel" style="display: none;">
+    <h2>Painel do Admin</h2>
+    <button onclick="logout()">Sair</button>
 
-    <!-- Firebase SDKs versão 11.x -->
-    <script type="module">
-        // Importa as funções necessárias do Firebase SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+    <form id="formAluno">
+      <h3>Cadastrar Aluno</h3>
+      <input type="text" id="nomeAluno" placeholder="Nome do aluno" required>
+      <input type="email" id="emailAluno" placeholder="Email do aluno" required>
+      <button type="submit">Salvar Aluno</button>
+    </form>
 
-        // Configuração do Firebase (utilizando o projeto correto)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
-            authDomain: "bancoteste-a09ee.firebaseapp.com",  // Nome do projeto no Firebase
-            projectId: "bancoteste-a09ee",  // Nome do projeto no Firebase
-            storageBucket: "bancoteste-a09ee.firebasestorage.app",
-            messagingSenderId: "938322850076",
-            appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9"
-        };
+    <form id="formProjeto">
+      <h3>Cadastrar Projeto</h3>
+      <input type="text" id="tituloProjeto" placeholder="Título" required>
+      <textarea id="descricaoProjeto" placeholder="Descrição"></textarea>
+      <input type="text" id="videoUrl" placeholder="Link do vídeo (YouTube)">
+      <label>Selecionar Alunos</label>
+      <select id="alunosSelect" multiple></select>
+      <button type="submit">Salvar Projeto</button>
+    </form>
+  </div>
 
-        // Inicializa o Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        const userForm = document.getElementById('userForm');
-        const usernameInput = document.getElementById('username');
-        const userList = document.getElementById('userList');
-        let currentEditId = null;
-
-        // Função para adicionar usuário
-        userForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Evitar o envio padrão do formulário
-            const username = usernameInput.value.trim();
-
-            if (username) {
-                try {
-                    if (currentEditId) {
-                        // Se estiver editando, atualize o nome do usuário
-                        const userRef = doc(db, "usuarios", currentEditId);
-                        await updateDoc(userRef, {
-                            name: username
-                        });
-                        console.log("Usuário atualizado com ID: ", currentEditId);
-                        currentEditId = null; // Limpar o ID de edição
-                    } else {
-                        // Caso contrário, adicione um novo usuário
-                        const docRef = await addDoc(collection(db, "usuarios"), {
-                            name: username
-                        });
-                        console.log("Usuário adicionado com ID: ", docRef.id);
-                    }
-
-                    // Limpar o campo do formulário após adicionar ou editar
-                    usernameInput.value = '';
-                    // Recarregar a lista de usuários
-                    loadUsers();
-                } catch (error) {
-                    console.error("Erro ao adicionar/atualizar usuário: ", error);
-                }
-            }
-        });
-
-        // Função para carregar os usuários
-        async function loadUsers() {
-            userList.innerHTML = ''; // Limpar a lista de usuários antes de recarregar
-
-            try {
-                // Obtém todos os usuários da coleção "usuarios"
-                const querySnapshot = await getDocs(collection(db, "usuarios"));
-                querySnapshot.forEach((doc) => {
-                    const user = doc.data();
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        ${user.name}
-                        <div class="action-buttons">
-                            <button class="edit" onclick="editUser('${doc.id}', '${user.name}')">
-                                <i class="fa fa-edit"></i>
-                            </button>
-                            <button class="delete" onclick="deleteUser('${doc.id}')">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                    userList.appendChild(li);
-                });
-            } catch (error) {
-                console.error("Erro ao carregar usuários: ", error);
-            }
-        }
-
-        // Função para editar usuário
-        window.editUser = function(id, name) {
-            usernameInput.value = name;
-            currentEditId = id; // Armazenar o ID do usuário que está sendo editado
-        };
-
-        // Função para excluir usuário
-        window.deleteUser = async function(id) {
-            try {
-                const userRef = doc(db, "usuarios", id);
-                await deleteDoc(userRef);
-                console.log("Usuário excluído!");
-                loadUsers(); // Recarregar lista de usuários
-            } catch (error) {
-                console.error("Erro ao excluir usuário: ", error);
-            }
-        };
-
-        // Carregar os usuários ao carregar a página
-        window.onload = loadUsers;
-    </script>
+  <!-- PÚBLICO -->
+  <div id="publicView">
+    <h2>Projetos Disponíveis</h2>
+    <ul id="listaProjetos"></ul>
+  </div>
 </body>
 </html>
