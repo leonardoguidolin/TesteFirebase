@@ -8,14 +8,14 @@
     import { getFirestore, collection, addDoc, doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "SUA_API_KEY",
-      authDomain: "SEU_DOMINIO.firebaseapp.com",
-      projectId: "SEU_PROJECT_ID",
-      storageBucket: "SEU_BUCKET.appspot.com",
-      messagingSenderId: "SEU_SENDER_ID",
-      appId: "SEU_APP_ID"
-    };
+ const firebaseConfig = {
+            apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
+            authDomain: "bancoteste-a09ee.firebaseapp.com",  // Nome do projeto no Firebase
+            projectId: "bancoteste-a09ee",  // Nome do projeto no Firebase
+            storageBucket: "bancoteste-a09ee.firebasestorage.app",
+            messagingSenderId: "938322850076",
+            appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9"
+        };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
