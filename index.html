@@ -1,201 +1,255 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>Sistema de Projetos Acadêmicos</title>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-storage-compat.js"></script>
+  <meta charset="UTF-8" />
+  <title>Sistema de Projetos de Alunos</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    section { display: none; margin-bottom: 30px; }
-    #adminPanel, #perfilAluno { border: 1px solid #ccc; padding: 10px; }
-    .projeto { border: 1px solid #aaa; padding: 10px; margin: 5px 0; }
-    .linkAluno { color: blue; text-decoration: underline; cursor: pointer; }
+    body {
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    form {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    ul { list-style: none; padding: 0; }
+    li { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 6px; }
   </style>
 </head>
 <body>
   <h1>Sistema de Projetos Acadêmicos</h1>
 
-  <section id="loginSection">
-    <h2>Login</h2>
-    <input type="text" id="loginUsuario" placeholder="Usuário"><br>
-    <input type="password" id="loginSenha" placeholder="Senha"><br>
-    <button id="btnEntrar">Entrar</button>
-  </section>
+  <!-- LOGIN -->
+  <div id="loginSection">
+    <input type="text" id="loginUser" placeholder="Usuário" />
+    <input type="password" id="loginPass" placeholder="Senha" />
+    <button id="btnLogin">Entrar</button>
+  </div>
 
-  <section id="adminPanel">
+  <!-- ADMIN -->
+  <div id="adminPanel" style="display:none;">
     <h2>Painel do Admin</h2>
-    <h3>Cadastrar Aluno</h3>
-    <input type="text" id="nomeAluno" placeholder="Nome"><br>
-    <input type="email" id="emailAluno" placeholder="Email"><br>
-    <button onclick="cadastrarAluno()">Cadastrar Aluno</button>
+    <button id="btnLogout">Sair</button>
 
-    <h3>Cadastrar Projeto</h3>
-    <input type="text" id="tituloProjeto" placeholder="Título"><br>
-    <textarea id="descricaoProjeto" placeholder="Descrição"></textarea><br>
-    <input type="url" id="videoProjeto" placeholder="Link do vídeo YouTube"><br>
-    <input type="file" id="pdfProjeto" accept="application/pdf"><br>
-    <select id="alunosSelect" multiple></select><br>
-    <button onclick="cadastrarProjeto()">Cadastrar Projeto</button>
-  </section>
+    <form id="formAluno">
+      <h3>Cadastrar Aluno</h3>
+      <input type="text" id="nomeAluno" placeholder="Nome do aluno" required />
+      <input type="email" id="emailAluno" placeholder="Email do aluno" required />
+      <button type="submit">Salvar Aluno</button>
+    </form>
 
-  <section id="publicView">
-    <h2>Projetos Cadastrados</h2>
-    <div id="listaProjetos"></div>
-  </section>
+    <form id="formProjeto">
+      <h3>Cadastrar Projeto</h3>
+      <input type="text" id="tituloProjeto" placeholder="Título" required />
+      <textarea id="descricaoProjeto" placeholder="Descrição"></textarea>
+      <input type="text" id="videoUrl" placeholder="Link do vídeo (YouTube)" />
+      <label>Selecionar Alunos</label>
+      <select id="alunosSelect" multiple></select>
+      <button type="submit">Salvar Projeto</button>
+    </form>
+  </div>
 
-  <section id="perfilAluno">
-    <button id="btnVoltar">Voltar</button>
-    <div id="dadosAluno"></div>
-    <h3>Projetos Participantes</h3>
-    <ul id="listaProjetosAluno"></ul>
-  </section>
+  <!-- PÚBLICO -->
+  <div id="publicView">
+    <h2>Projetos Disponíveis</h2>
+    <ul id="listaProjetos"></ul>
+  </div>
 
-  <script>
-    // Firebase config - substitua pelos dados reais do seu projeto
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+    } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+    // Config Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyDqXJZ-IvAwe4d5YJ7uwzFND7LtZtYzqKw",
-      authDomain: "projetos-alunos.firebaseapp.com",
-      projectId: "projetos-alunos",
-      storageBucket: "projetos-alunos.appspot.com",
-      messagingSenderId: "1234567890",
-      appId: "1:1234567890:web:abc123def456"
+      apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
+      authDomain: "bancoteste-a09ee.firebaseapp.com",
+      projectId: "bancoteste-a09ee",
+      storageBucket: "bancoteste-a09ee.appspot.com",
+      messagingSenderId: "938322850076",
+      appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9",
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const storage = firebase.storage();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Login fixo (hardcoded)
+    const USER_ADMIN = "admin";
+    const PASS_ADMIN = "123456";
+
+    const loginSection = document.getElementById("loginSection");
+    const adminPanel = document.getElementById("adminPanel");
+    const publicView = document.getElementById("publicView");
+
+    // Estado simples do login
+    let loggedIn = false;
+
+    // Função para mostrar ou esconder telas
+    function atualizarVisibilidade() {
+      if (loggedIn) {
+        loginSection.style.display = "none";
+        adminPanel.style.display = "block";
+        publicView.style.display = "none";
+      } else {
+        loginSection.style.display = "block";
+        adminPanel.style.display = "none";
+        publicView.style.display = "block";
+      }
+    }
 
     // Login simples
-    const usuario = "admin";
-    const senha = "1234";
+    document.getElementById("btnLogin").addEventListener("click", () => {
+      const user = document.getElementById("loginUser").value.trim();
+      const pass = document.getElementById("loginPass").value;
 
-    document.getElementById("btnEntrar").onclick = () => {
-      const u = document.getElementById("loginUsuario").value;
-      const s = document.getElementById("loginSenha").value;
-      if (u === usuario && s === senha) {
-        document.getElementById("loginSection").style.display = "none";
-        document.getElementById("adminPanel").style.display = "block";
+      if (user === USER_ADMIN && pass === PASS_ADMIN) {
+        loggedIn = true;
+        atualizarVisibilidade();
         carregarAlunos();
+        carregarProjetos();
       } else {
         alert("Usuário ou senha incorretos!");
       }
-    };
+    });
 
-    async function cadastrarAluno() {
-      const nome = document.getElementById("nomeAluno").value;
-      const email = document.getElementById("emailAluno").value;
-      if (nome && email) {
-        await db.collection("alunos").add({ nome, email });
-        alert("Aluno cadastrado!");
-        document.getElementById("nomeAluno").value = "";
-        document.getElementById("emailAluno").value = "";
-        carregarAlunos();
+    // Logout
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      loggedIn = false;
+      atualizarVisibilidade();
+      carregarProjetos();
+    });
+
+    // Cadastrar aluno
+    document.getElementById("formAluno").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nome = document.getElementById("nomeAluno").value.trim();
+      const email = document.getElementById("emailAluno").value.trim();
+
+      if (!nome || !email) {
+        alert("Preencha todos os campos do aluno.");
+        return;
       }
-    }
 
+      try {
+        await addDoc(collection(db, "usuarios"), {
+          nome,
+          email,
+          projetos: [],
+        });
+        alert("Aluno cadastrado!");
+        e.target.reset();
+        carregarAlunos();
+      } catch (err) {
+        alert("Erro ao cadastrar aluno: " + err.message);
+      }
+    });
+
+    // Cadastrar projeto
+    document.getElementById("formProjeto").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById("tituloProjeto").value.trim();
+      const descricao = document.getElementById("descricaoProjeto").value.trim();
+      const videoUrl = document.getElementById("videoUrl").value.trim();
+      const alunosSelecionados = [...document.getElementById("alunosSelect").selectedOptions].map(opt => opt.value);
+
+      if (!titulo) {
+        alert("Título do projeto é obrigatório.");
+        return;
+      }
+
+      try {
+        const projetoRef = await addDoc(collection(db, "projetos"), {
+          titulo,
+          descricao,
+          videoUrl,
+          pdfUrl: "https://exemplo.com", // pode implementar upload depois
+          alunos: alunosSelecionados,
+        });
+
+        // Atualiza os projetos dos alunos
+        for (const alunoId of alunosSelecionados) {
+          const alunoRef = doc(db, "usuarios", alunoId);
+          const alunoSnap = await getDoc(alunoRef);
+          if (alunoSnap.exists()) {
+            const dados = alunoSnap.data();
+            await updateDoc(alunoRef, {
+              projetos: [...(dados.projetos || []), projetoRef.id],
+            });
+          }
+        }
+
+        alert("Projeto cadastrado!");
+        e.target.reset();
+        carregarProjetos();
+      } catch (err) {
+        alert("Erro ao cadastrar projeto: " + err.message);
+      }
+    });
+
+    // Carregar alunos para o select (só se admin estiver logado)
     async function carregarAlunos() {
+      if (!loggedIn) return;
+      const alunos = await getDocs(collection(db, "usuarios"));
       const select = document.getElementById("alunosSelect");
       select.innerHTML = "";
-      const snap = await db.collection("alunos").get();
-      snap.forEach(doc => {
+      alunos.forEach((doc) => {
+        const aluno = doc.data();
         const option = document.createElement("option");
         option.value = doc.id;
-        option.textContent = doc.data().nome;
+        option.textContent = aluno.nome;
         select.appendChild(option);
       });
-      listarProjetos();
     }
 
-    async function cadastrarProjeto() {
-      const titulo = document.getElementById("tituloProjeto").value;
-      const descricao = document.getElementById("descricaoProjeto").value;
-      const video = document.getElementById("videoProjeto").value;
-      const alunosSelecionados = Array.from(document.getElementById("alunosSelect").selectedOptions).map(o => o.value);
-      const pdfFile = document.getElementById("pdfProjeto").files[0];
-
-      let pdfUrl = "";
-      if (pdfFile) {
-        const storageRef = storage.ref().child(`pdfs/${Date.now()}_${pdfFile.name}`);
-        await storageRef.put(pdfFile);
-        pdfUrl = await storageRef.getDownloadURL();
-      }
-
-      await db.collection("projetos").add({
-        titulo, descricao, video, pdfUrl, alunos: alunosSelecionados
-      });
-
-      alert("Projeto cadastrado!");
-      document.getElementById("tituloProjeto").value = "";
-      document.getElementById("descricaoProjeto").value = "";
-      document.getElementById("videoProjeto").value = "";
-      document.getElementById("pdfProjeto").value = "";
-      listarProjetos();
-    }
-
-    async function listarProjetos() {
-      const container = document.getElementById("listaProjetos");
-      container.innerHTML = "";
-      const snap = await db.collection("projetos").get();
-      for (const doc of snap.docs) {
-        const data = doc.data();
-        const div = document.createElement("div");
-        div.className = "projeto";
-        div.innerHTML = `
-          <h4>${data.titulo}</h4>
-          <p>${data.descricao}</p>
-          ${data.video ? `<a href="${data.video}" target="_blank">Vídeo</a><br>` : ""}
-          ${data.pdfUrl ? `<a href="${data.pdfUrl}" target="_blank">PDF</a><br>` : ""}
-          <strong>Alunos:</strong> <span id="alunos-${doc.id}">Carregando...</span>
-        `;
-        container.appendChild(div);
-        mostrarNomesAlunos(data.alunos, `alunos-${doc.id}`);
-      }
-    }
-
-    async function mostrarNomesAlunos(ids, elementoId) {
-      const span = document.getElementById(elementoId);
-      const nomes = [];
-      for (const id of ids) {
-        const alunoDoc = await db.collection("alunos").doc(id).get();
-        if (alunoDoc.exists) {
-          nomes.push(`<span class=\"linkAluno\" onclick=\"abrirPerfilAluno('${id}')\">${alunoDoc.data().nome}</span>`);
-        }
-      }
-      span.innerHTML = nomes.join(", ");
-    }
-
-    async function abrirPerfilAluno(id) {
-      document.getElementById("adminPanel").style.display = "none";
-      document.getElementById("publicView").style.display = "none";
-      document.getElementById("perfilAluno").style.display = "block";
-
-      const alunoDoc = await db.collection("alunos").doc(id).get();
-      document.getElementById("dadosAluno").innerHTML = `<h3>${alunoDoc.data().nome}</h3><p>${alunoDoc.data().email}</p>`;
-
-      const lista = document.getElementById("listaProjetosAluno");
+    // Carregar projetos para exibir público ou admin
+    async function carregarProjetos() {
+      const lista = document.getElementById("listaProjetos");
       lista.innerHTML = "";
-      const snap = await db.collection("projetos").get();
-      snap.forEach(doc => {
-        const data = doc.data();
-        if (data.alunos.includes(id)) {
-          const li = document.createElement("li");
-          li.innerHTML = `<strong>${data.titulo}</strong>: ${data.descricao}`;
-          lista.appendChild(li);
+
+      const projetos = await getDocs(collection(db, "projetos"));
+      for (const docSnap of projetos.docs) {
+        const proj = docSnap.data();
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${proj.titulo}</strong><br>${proj.descricao}<br>
+          ${proj.videoUrl ? `<a href="${proj.videoUrl}" target="_blank">Ver vídeo</a>` : ""}`;
+
+        if (proj.alunos && proj.alunos.length > 0) {
+          const nomesAlunos = await Promise.all(
+            proj.alunos.map(async (id) => {
+              const alunoSnap = await getDoc(doc(db, "usuarios", id));
+              return alunoSnap.exists() ? alunoSnap.data().nome : "Desconhecido";
+            })
+          );
+          li.innerHTML += `<br><em>Participantes:</em> ${nomesAlunos.join(", ")}`;
         }
-      });
+
+        lista.appendChild(li);
+      }
     }
 
-    document.getElementById("btnVoltar").onclick = () => {
-      document.getElementById("perfilAluno").style.display = "none";
-      document.getElementById("adminPanel").style.display = "block";
-    };
-
-    // Mostrar login e área pública ao iniciar
-    document.getElementById("loginSection").style.display = "block";
-    document.getElementById("publicView").style.display = "block";
-    listarProjetos();
+    // Mostrar só a view pública inicialmente
+    atualizarVisibilidade();
+    carregarProjetos();
   </script>
 </body>
 </html>
