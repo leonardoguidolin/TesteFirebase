@@ -48,96 +48,119 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc,
-      setDoc,
-      runTransaction,
-      onSnapshot
-    } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    runTransaction,
+    onSnapshot,
+    serverTimestamp,
+    Timestamp
+  } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
-    // 👉 Substitua pela sua config, se necessário (mantive a que você já usa)
-    const firebaseConfig = {
-      apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
-      authDomain: "bancoteste-a09ee.firebaseapp.com",
-      projectId: "bancoteste-a09ee",
-      storageBucket: "bancoteste-a09ee.appspot.com",
-      messagingSenderId: "938322850076",
-      appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9",
-    };
+  // Config do seu projeto (mantida)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
+    authDomain: "bancoteste-a09ee.firebaseapp.com",
+    projectId: "bancoteste-a09ee",
+    storageBucket: "bancoteste-a09ee.appspot.com",
+    messagingSenderId: "938322850076",
+    appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9",
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    const countEl = document.getElementById('count');
-    const statusEl = document.getElementById('status');
-    const btnPlus = document.getElementById('btnPlus');
-    const daysSinceEl = document.getElementById('daysSince');
+  const countEl = document.getElementById('count');
+  const statusEl = document.getElementById('status');
+  const btnPlus = document.getElementById('btnPlus');
+  const daysSinceEl = document.getElementById('daysSince');
 
-    let lastUpdated = null; // guardará o Date da última ocorrência
+  const counterRef = doc(db, 'counters', 'leandro');
+  let lastUpdated = null;
 
-    // Documento único para o contador
-    const counterRef = doc(db, 'counters', 'leandro');
+  function status(msg, isError = false) {
+    statusEl.textContent = msg;
+    statusEl.className = 'status ' + (isError ? 'error' : '');
+  }
 
-    // Garante que o documento exista
-    async function ensureDoc() {
-      const snap = await getDoc(counterRef);
-      if (!snap.exists()) {
-        await setDoc(counterRef, { count: 0, updatedAt: new Date() });
-      }
+  async function ensureDoc() {
+    const snap = await getDoc(counterRef);
+    if (!snap.exists()) {
+      await setDoc(counterRef, { count: 0, updatedAt: serverTimestamp() });
     }
+  }
 
-    // Observa em tempo real
-    onSnapshot(counterRef, (snap) => {
-      if (snap.exists()) {
+  function renderDaysSince() {
+    if (!lastUpdated) {
+      daysSinceEl.textContent = 'Sem ocorrências registradas ainda';
+      return;
+    }
+    const now = new Date();
+    const ms = now - lastUpdated;
+    const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+    const label = days <= 0 ? '0 dias sem ocorrências' : `${days} dia${days === 1 ? '' : 's'} sem ocorrências`;
+    daysSinceEl.textContent = `${label} • Última: ${lastUpdated.toLocaleString()}`;
+  }
+
+  (async () => {
+    try {
+      status('Conectando ao banco…', true);
+      await ensureDoc();
+
+      onSnapshot(counterRef, (snap) => {
+        if (!snap.exists()) {
+          status('Documento ausente (criando…)');
+          ensureDoc().catch(err => status(`Erro criando doc: ${err.message}`, true));
+          return;
+        }
         const data = snap.data();
         countEl.textContent = Number(data.count || 0);
-        statusEl.textContent = `Sincronizado • Última atualização salva`;
+        status('Conectado e sincronizado');
 
-        // Define lastUpdated a partir do Firestore (Timestamp ou Date)
         const ts = data.updatedAt;
-        lastUpdated = ts && typeof ts.toDate === 'function' ? ts.toDate() : (ts ? new Date(ts) : null);
+        if (ts instanceof Timestamp) {
+          lastUpdated = ts.toDate();
+        } else if (ts && typeof ts.toDate === 'function') {
+          lastUpdated = ts.toDate();
+        } else if (ts) {
+          lastUpdated = new Date(ts);
+        } else {
+          lastUpdated = null;
+        }
         renderDaysSince();
-      } else {
-        countEl.textContent = '0';
-        statusEl.textContent = 'Documento não encontrado (criando...)';
-        ensureDoc().catch(err => status(err.message));
-      }
-    }, (err) => status(`Erro no listener: ${err.message}`));
-            return;
-          }
-          const current = Number(snap.data().count || 0);
-          transaction.update(counterRef, { count: current + 1, updatedAt: new Date() });
-        });
-        status('Valor incrementado e salvo.');
-      } catch (err) {
-        status(`Erro ao incrementar: ${err.message}`, true);
-      }
-    });
+      }, (err) => {
+        status(`Erro no onSnapshot: ${err?.message || err}`, true);
+        console.error(err);
+      });
 
-    function status(msg, isError = false) {
-      statusEl.textContent = msg;
-      statusEl.className = 'status ' + (isError ? 'error' : '');
+      setInterval(renderDaysSince, 60 * 1000);
+      renderDaysSince();
+    } catch (e) {
+      status(`Erro ao iniciar: ${e?.message || e}`, true);
+      console.error(e);
     }
+  })();
 
-    function renderDaysSince() {
-      if (!lastUpdated) {
-        daysSinceEl.textContent = '—';
-        return;
-      }
-      const now = new Date();
-      const ms = now - lastUpdated;
-      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-      daysSinceEl.textContent = `${days} dia${days === 1 ? '' : 's'} sem ocorrências`;
+  btnPlus.addEventListener('click', async () => {
+    try {
+      await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(counterRef);
+        if (!snap.exists()) {
+          transaction.set(counterRef, { count: 1, updatedAt: serverTimestamp() });
+          return;
+        }
+        const current = Number(snap.data().count || 0);
+        transaction.update(counterRef, { count: current + 1, updatedAt: serverTimestamp() });
+      });
+      status('Valor incrementado e salvo.');
+    } catch (err) {
+      status(`Erro ao incrementar: ${err.message}`, true);
+      console.error(err);
     }
-
-    // Inicializa documento na primeira carga
-    ensureDoc().catch(err => status(`Erro ao criar doc: ${err.message}`, true));
-
-    // Atualiza o texto de "x dias sem ocorrências" todo minuto
-    setInterval(renderDaysSince, 60 * 1000);
-  </script>
+  });
+</script>
 </body>
 </html>
