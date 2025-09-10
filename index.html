@@ -24,12 +24,13 @@
     .status { margin-top: 12px; min-height: 22px; color: var(--muted); }
     .hint { margin-top: 18px; font-size: 13px; color: var(--muted); }
     code { background:#0a1222; border:1px solid #1f2937; padding:3px 6px; border-radius:6px; }
+      .streak { margin-top: 10px; font-weight: 600; font-size: 18px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Contador de vezes que me chamaram de <span class="ok">“Leandro”</span></h1>
+      <h1>Contador de vezes que me chamam de <span class="ok">“Leandro”</span></h1>
       <p class="sub">Clique no <strong>+</strong> para registrar cada ocorrência. O valor é salvo no Firestore em tempo real.</p>
 
       <div class="counter">
@@ -39,6 +40,7 @@
         </div>
       </div>
 
+      <div id="daysSince" class="streak">—</div>
       <div class="status" id="status">Conectando ao banco…</div>
 
       <p class="hint">Dica: o contador usa o documento <code>counters/leandro</code> com o campo <code>count</code>. Se o doc não existir, será criado com <code>0</code>.</p>
@@ -72,6 +74,9 @@
     const countEl = document.getElementById('count');
     const statusEl = document.getElementById('status');
     const btnPlus = document.getElementById('btnPlus');
+    const daysSinceEl = document.getElementById('daysSince');
+
+    let lastUpdated = null; // guardará o Date da última ocorrência
 
     // Documento único para o contador
     const counterRef = doc(db, 'counters', 'leandro');
@@ -89,21 +94,18 @@
       if (snap.exists()) {
         const data = snap.data();
         countEl.textContent = Number(data.count || 0);
-        statusEl.textContent = `Sincronizado • Última atualização salva`; 
+        statusEl.textContent = `Sincronizado • Última atualização salva`;
+
+        // Define lastUpdated a partir do Firestore (Timestamp ou Date)
+        const ts = data.updatedAt;
+        lastUpdated = ts && typeof ts.toDate === 'function' ? ts.toDate() : (ts ? new Date(ts) : null);
+        renderDaysSince();
       } else {
         countEl.textContent = '0';
         statusEl.textContent = 'Documento não encontrado (criando...)';
         ensureDoc().catch(err => status(err.message));
       }
     }, (err) => status(`Erro no listener: ${err.message}`));
-
-    // Incremento atômico com transação para evitar condições de corrida
-    btnPlus.addEventListener('click', async () => {
-      try {
-        await runTransaction(db, async (transaction) => {
-          const snap = await transaction.get(counterRef);
-          if (!snap.exists()) {
-            transaction.set(counterRef, { count: 1, updatedAt: new Date() });
             return;
           }
           const current = Number(snap.data().count || 0);
@@ -120,9 +122,22 @@
       statusEl.className = 'status ' + (isError ? 'error' : '');
     }
 
+    function renderDaysSince() {
+      if (!lastUpdated) {
+        daysSinceEl.textContent = '—';
+        return;
+      }
+      const now = new Date();
+      const ms = now - lastUpdated;
+      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      daysSinceEl.textContent = `${days} dia${days === 1 ? '' : 's'} sem ocorrências`;
+    }
+
     // Inicializa documento na primeira carga
     ensureDoc().catch(err => status(`Erro ao criar doc: ${err.message}`, true));
+
+    // Atualiza o texto de "x dias sem ocorrências" todo minuto
+    setInterval(renderDaysSince, 60 * 1000);
   </script>
 </body>
 </html>
-
