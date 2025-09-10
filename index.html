@@ -2,87 +2,46 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Sistema de Projetos de Alunos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contador de "Leandro"</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f4f4f4;
-      padding: 20px;
-    }
-    h1, h2, h3 {
-      text-align: center;
-    }
-    form {
-      background: #fff;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-    }
-    input, textarea, select, button {
-      width: 100%;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-    ul { list-style: none; padding: 0; }
-    li { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 6px; cursor: pointer; }
-    #perfilAluno {
-      background: #fff;
-      padding: 15px;
-      margin-top: 20px;
-      border-radius: 8px;
-    }
-    .hidden { display: none; }
+    :root { --bg:#0f172a; --card:#111827; --fg:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial; background: linear-gradient(180deg, #0b1023, #0a0f1e 40%, #070b16); color: var(--fg); }
+    .wrap { max-width: 720px; margin: 40px auto; padding: 0 16px; }
+    .card { background: linear-gradient(180deg, #0b1222, #0d1426); border: 1px solid #1f2937; border-radius: 18px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    h1 { margin: 0 0 8px; font-weight: 750; letter-spacing: .2px; }
+    p.sub { margin: 0 0 16px; color: var(--muted); }
+    .counter { display:flex; align-items:center; gap:20px; margin: 14px 0 6px; }
+    .count { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: -1px; padding: 8px 14px; border-radius: 12px; background: #0a1222; border:1px solid #1f2937; min-width: 110px; text-align:center; }
+    button { appearance: none; border: 1px solid #1f2937; background: #101827; color: var(--fg); padding: 14px 18px; border-radius: 14px; font-size: 16px; cursor: pointer; transition: transform .05s ease, background .2s ease; }
+    button:active { transform: translateY(1px); }
+    .btnPlus { font-weight: 800; font-size: 18px; background: #0e1a2f; }
+    .btnPlus span { font-size: 22px; margin-right: 6px; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; }
+    .ok { color: var(--accent); }
+    .error { color: #f87171; }
+    .status { margin-top: 12px; min-height: 22px; color: var(--muted); }
+    .hint { margin-top: 18px; font-size: 13px; color: var(--muted); }
+    code { background:#0a1222; border:1px solid #1f2937; padding:3px 6px; border-radius:6px; }
   </style>
 </head>
 <body>
-  <h1>Sistema de Projetos Acadêmicos</h1>
+  <div class="wrap">
+    <div class="card">
+      <h1>Contador de vezes que me chamam de <span class="ok">“Leandro”</span></h1>
+      <p class="sub">Clique no <strong>+</strong> para registrar cada ocorrência. O valor é salvo no Firestore em tempo real.</p>
 
-  <!-- LOGIN -->
-  <div id="loginSection">
-    <input type="text" id="loginUser" placeholder="Usuário" />
-    <input type="password" id="loginPass" placeholder="Senha" />
-    <button id="btnLogin">Entrar</button>
-  </div>
+      <div class="counter">
+        <div class="count" id="count">0</div>
+        <div class="row">
+          <button id="btnPlus" class="btnPlus"><span>＋</span>Adicionar 1</button>
+        </div>
+      </div>
 
-  <!-- ADMIN -->
-  <div id="adminPanel" class="hidden">
-    <h2>Painel do Admin</h2>
-    <button id="btnLogout">Sair</button>
+      <div class="status" id="status">Conectando ao banco…</div>
 
-    <form id="formAluno">
-      <h3>Cadastrar Aluno</h3>
-      <input type="text" id="nomeAluno" placeholder="Nome do aluno" required />
-      <input type="email" id="emailAluno" placeholder="Email do aluno" required />
-      <button type="submit">Salvar Aluno</button>
-    </form>
-
-    <form id="formProjeto">
-      <h3>Cadastrar Projeto</h3>
-      <input type="text" id="tituloProjeto" placeholder="Título" required />
-      <textarea id="descricaoProjeto" placeholder="Descrição"></textarea>
-      <input type="text" id="videoUrl" placeholder="Link do vídeo (YouTube)" />
-      <label>Selecionar Alunos</label>
-      <select id="alunosSelect" multiple></select>
-      <button type="submit">Salvar Projeto</button>
-    </form>
-  </div>
-
-  <!-- PÚBLICO -->
-  <div id="publicView">
-    <h2>Projetos Disponíveis</h2>
-    <ul id="listaProjetos"></ul>
-
-    <h2>Alunos</h2>
-    <ul id="listaAlunos"></ul>
-
-    <div id="perfilAluno" class="hidden">
-      <h3>Perfil do Aluno</h3>
-      <p><strong>Nome:</strong> <span id="perfilNome"></span></p>
-      <p><strong>Email:</strong> <span id="perfilEmail"></span></p>
-      <h4>Projetos Participantes</h4>
-      <ul id="projetosDoAluno"></ul>
+      <p class="hint">Dica: o contador usa o documento <code>counters/leandro</code> com o campo <code>count</code>. Se o doc não existir, será criado com <code>0</code>.</p>
     </div>
   </div>
 
@@ -90,14 +49,14 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
     import {
       getFirestore,
-      collection,
-      addDoc,
       doc,
       getDoc,
-      getDocs,
-      updateDoc
+      setDoc,
+      runTransaction,
+      onSnapshot
     } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
+    // 👉 Substitua pela sua config, se necessário (mantive a que você já usa)
     const firebaseConfig = {
       apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
       authDomain: "bancoteste-a09ee.firebaseapp.com",
@@ -110,176 +69,60 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const USER_ADMIN = "admin";
-    const PASS_ADMIN = "123456";
+    const countEl = document.getElementById('count');
+    const statusEl = document.getElementById('status');
+    const btnPlus = document.getElementById('btnPlus');
 
-    const loginSection = document.getElementById("loginSection");
-    const adminPanel = document.getElementById("adminPanel");
-    const publicView = document.getElementById("publicView");
+    // Documento único para o contador
+    const counterRef = doc(db, 'counters', 'leandro');
 
-    const listaAlunos = document.getElementById("listaAlunos");
-    const perfilAluno = document.getElementById("perfilAluno");
-    const perfilNome = document.getElementById("perfilNome");
-    const perfilEmail = document.getElementById("perfilEmail");
-    const projetosDoAluno = document.getElementById("projetosDoAluno");
-
-    let loggedIn = false;
-
-    function atualizarVisibilidade() {
-      loginSection.classList.toggle("hidden", loggedIn);
-      adminPanel.classList.toggle("hidden", !loggedIn);
-      publicView.classList.toggle("hidden", false);
+    // Garante que o documento exista
+    async function ensureDoc() {
+      const snap = await getDoc(counterRef);
+      if (!snap.exists()) {
+        await setDoc(counterRef, { count: 0, updatedAt: new Date() });
+      }
     }
 
-    document.getElementById("btnLogin").addEventListener("click", () => {
-      const user = document.getElementById("loginUser").value.trim();
-      const pass = document.getElementById("loginPass").value;
-      if (user === USER_ADMIN && pass === PASS_ADMIN) {
-        loggedIn = true;
-        atualizarVisibilidade();
-        carregarAlunos();
-        carregarProjetos();
-        carregarListaAlunos();
+    // Observa em tempo real
+    onSnapshot(counterRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        countEl.textContent = Number(data.count || 0);
+        statusEl.textContent = `Sincronizado • Última atualização salva`; 
       } else {
-        alert("Usuário ou senha incorretos!");
+        countEl.textContent = '0';
+        statusEl.textContent = 'Documento não encontrado (criando...)';
+        ensureDoc().catch(err => status(err.message));
       }
-    });
+    }, (err) => status(`Erro no listener: ${err.message}`));
 
-    document.getElementById("btnLogout").addEventListener("click", () => {
-      loggedIn = false;
-      atualizarVisibilidade();
-      carregarProjetos();
-      carregarListaAlunos();
-    });
-
-    document.getElementById("formAluno").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const nome = document.getElementById("nomeAluno").value.trim();
-      const email = document.getElementById("emailAluno").value.trim();
-      if (!nome || !email) {
-        alert("Preencha todos os campos do aluno.");
-        return;
-      }
+    // Incremento atômico com transação para evitar condições de corrida
+    btnPlus.addEventListener('click', async () => {
       try {
-        await addDoc(collection(db, "usuarios"), {
-          nome,
-          email,
-          projetos: [],
-        });
-        alert("Aluno cadastrado!");
-        e.target.reset();
-        carregarAlunos();
-        carregarListaAlunos();
-      } catch (err) {
-        alert("Erro ao cadastrar aluno: " + err.message);
-      }
-    });
-
-    document.getElementById("formProjeto").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const titulo = document.getElementById("tituloProjeto").value.trim();
-      const descricao = document.getElementById("descricaoProjeto").value.trim();
-      const videoUrl = document.getElementById("videoUrl").value.trim();
-      const alunosSelecionados = [...document.getElementById("alunosSelect").selectedOptions].map(opt => opt.value);
-      if (!titulo) {
-        alert("Título do projeto é obrigatório.");
-        return;
-      }
-      try {
-        const projetoRef = await addDoc(collection(db, "projetos"), {
-          titulo,
-          descricao,
-          videoUrl,
-          pdfUrl: "https://exemplo.com",
-          alunos: alunosSelecionados,
-        });
-        for (const alunoId of alunosSelecionados) {
-          const alunoRef = doc(db, "usuarios", alunoId);
-          const alunoSnap = await getDoc(alunoRef);
-          if (alunoSnap.exists()) {
-            const dados = alunoSnap.data();
-            await updateDoc(alunoRef, {
-              projetos: [...(dados.projetos || []), projetoRef.id],
-            });
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(counterRef);
+          if (!snap.exists()) {
+            transaction.set(counterRef, { count: 1, updatedAt: new Date() });
+            return;
           }
-        }
-        alert("Projeto cadastrado!");
-        e.target.reset();
-        carregarProjetos();
-        carregarListaAlunos();
+          const current = Number(snap.data().count || 0);
+          transaction.update(counterRef, { count: current + 1, updatedAt: new Date() });
+        });
+        status('Valor incrementado e salvo.');
       } catch (err) {
-        alert("Erro ao cadastrar projeto: " + err.message);
+        status(`Erro ao incrementar: ${err.message}`, true);
       }
     });
 
-    async function carregarAlunos() {
-      if (!loggedIn) return;
-      const alunos = await getDocs(collection(db, "usuarios"));
-      const select = document.getElementById("alunosSelect");
-      select.innerHTML = "";
-      alunos.forEach((doc) => {
-        const aluno = doc.data();
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = aluno.nome;
-        select.appendChild(option);
-      });
+    function status(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.className = 'status ' + (isError ? 'error' : '');
     }
 
-    async function carregarProjetos() {
-      const lista = document.getElementById("listaProjetos");
-      lista.innerHTML = "";
-      const projetos = await getDocs(collection(db, "projetos"));
-      for (const docSnap of projetos.docs) {
-        const proj = docSnap.data();
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${proj.titulo}</strong><br>${proj.descricao}<br>
-          ${proj.videoUrl ? `<a href="${proj.videoUrl}" target="_blank">Ver vídeo</a>` : ""}`;
-        if (proj.alunos && proj.alunos.length > 0) {
-          const nomesAlunos = await Promise.all(
-            proj.alunos.map(async (id) => {
-              const alunoSnap = await getDoc(doc(db, "usuarios", id));
-              return alunoSnap.exists() ? alunoSnap.data().nome : "Desconhecido";
-            })
-          );
-          li.innerHTML += `<br><em>Participantes:</em> ${nomesAlunos.join(", ")}`;
-        }
-        lista.appendChild(li);
-      }
-    }
-
-    async function carregarListaAlunos() {
-      listaAlunos.innerHTML = "";
-      const alunos = await getDocs(collection(db, "usuarios"));
-      alunos.forEach((docSnap) => {
-        const aluno = docSnap.data();
-        const li = document.createElement("li");
-        li.textContent = aluno.nome;
-        li.addEventListener("click", () => mostrarPerfilAluno(docSnap.id, aluno));
-        listaAlunos.appendChild(li);
-      });
-    }
-
-    async function mostrarPerfilAluno(id, aluno) {
-      perfilAluno.classList.remove("hidden");
-      perfilNome.textContent = aluno.nome;
-      perfilEmail.textContent = aluno.email;
-      projetosDoAluno.innerHTML = "";
-      for (const projId of aluno.projetos || []) {
-        const projSnap = await getDoc(doc(db, "projetos", projId));
-        if (projSnap.exists()) {
-          const proj = projSnap.data();
-          const li = document.createElement("li");
-          li.innerHTML = `<strong>${proj.titulo}</strong><br>${proj.descricao}<br>
-            ${proj.videoUrl ? `<a href="${proj.videoUrl}" target="_blank">Ver vídeo</a>` : ""}`;
-          projetosDoAluno.appendChild(li);
-        }
-      }
-    }
-
-    atualizarVisibilidade();
-    carregarProjetos();
-    carregarListaAlunos();
+    // Inicializa documento na primeira carga
+    ensureDoc().catch(err => status(`Erro ao criar doc: ${err.message}`, true));
   </script>
 </body>
 </html>
+
