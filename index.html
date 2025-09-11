@@ -2,259 +2,166 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Contador de "Leandro"</title>
   <style>
-    body { font-family: sans-serif; background:#0f172a; color:#e5e7eb; padding:20px; }
-    .card { background:#111827; border-radius:10px; padding:20px; max-width:600px; margin:auto; }
-    h1 { margin-top:0; }
-    .counter { display:flex; align-items:center; gap:20px; }
-    .count { font-size:48px; font-weight:bold; background:#0a1222; padding:10px 20px; border-radius:8px; }
-    button { background:#1f2937; color:#e5e7eb; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:16px; }
-    button:hover { background:#374151; }
-    .status { margin-top:10px; color:#9ca3af; }
-    .streak { margin-top:10px; font-weight:bold; }
-    #history { margin-top:20px; background:#0a1222; padding:10px; border-radius:8px; max-height:200px; overflow-y:auto; }
-    #history ul { list-style:none; padding:0; margin:0; }
-    #history li { padding:5px 0; border-bottom:1px solid #1f2937; font-size:14px; }
+    :root { --bg:#0f172a; --card:#111827; --fg:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial; background: linear-gradient(180deg, #0b1023, #0a0f1e 40%, #070b16); color: var(--fg); }
+    .wrap { max-width: 720px; margin: 40px auto; padding: 0 16px; }
+    .card { background: linear-gradient(180deg, #0b1222, #0d1426); border: 1px solid #1f2937; border-radius: 18px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    h1 { margin: 0 0 8px; font-weight: 750; letter-spacing: .2px; }
+    p.sub { margin: 0 0 16px; color: var(--muted); }
+    .counter { display:flex; align-items:center; gap:20px; margin: 14px 0 6px; }
+    .count { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: -1px; padding: 8px 14px; border-radius: 12px; background: #0a1222; border:1px solid #1f2937; min-width: 110px; text-align:center; }
+    button { appearance: none; border: 1px solid #1f2937; background: #101827; color: var(--fg); padding: 14px 18px; border-radius: 14px; font-size: 16px; cursor: pointer; transition: transform .05s ease, background .2s ease; }
+    button:active { transform: translateY(1px); }
+    .btnPlus { font-weight: 800; font-size: 18px; background: #0e1a2f; }
+    .btnPlus span { font-size: 22px; margin-right: 6px; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; }
+    .ok { color: var(--accent); }
+    .error { color: #f87171; }
+    .status { margin-top: 12px; min-height: 22px; color: var(--muted); }
+    .hint { margin-top: 18px; font-size: 13px; color: var(--muted); }
+    code { background:#0a1222; border:1px solid #1f2937; padding:3px 6px; border-radius:6px; }
       .streak { margin-top: 10px; font-weight: 600; font-size: 18px; }
-    .history { margin-top: 18px; }
-    .history h3 { margin: 12px 0 8px; font-size: 16px; opacity: .9; }
-    .history ul { list-style: none; padding: 0; margin: 0; }
-    .history li { padding: 8px 10px; margin: 6px 0; border: 1px solid #1f2937; border-radius: 10px; background: #0a1222; font-size: 14px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Contador de vezes que me chamam de “Leandro”</h1>
-    <div class="counter">
-      <div class="count" id="count">0</div>
-      <button id="btnPlus">＋ Adicionar 1</button>
-    </div>
-    <div id="daysSince" class="streak">—</div>
-    <div id="daysSince" class="streak">—</div>
-      <div class="status" id="status">Conectando ao Firestore…</div>
+  <div class="wrap">
+    <div class="card">
+     
+      <h1>Contador de vezes que me chamaram de <span class="ok">“Leandro”</span></h1>
+      <p class="sub">Clique no <strong>+</strong> para registrar cada ocorrência. O valor é salvo no Firestore em tempo real.</p>
 
-      <div class="row" style="margin-top:10px; gap:10px; flex-wrap:wrap;">
-        <button id="btnTest">Testar conexão</button>
+      <div class="counter">
+        <div class="count" id="count">0</div>
+        <div class="row">
+          <button id="btnPlus" class="btnPlus"><span>＋</span>Adicionar 1</button>
+        </div>
       </div>
-      <pre id="diag" style="margin-top:8px; white-space:pre-wrap; background:#0a1222; border:1px solid #1f2937; padding:10px; border-radius:10px; max-height:160px; overflow:auto; font-size:12px;">(diagnóstico)</pre>
 
-      <div class="history">
-        <h3>Histórico de ocorrências (todas)</h3>
-        <ul id="historyList"></ul>
-      </div>
-    <div id="history">
-      <h3>Histórico de Ocorrências</h3>
-      <ul id="historyList"></ul>
+      <div id="daysSince" class="streak">—</div>
+      <div class="status" id="status">Conectando ao banco…</div>
+
+      <p class="hint">Dica: o contador usa o documento <code>counters/leandro</code> com o campo <code>count</code>. Se o doc não existir, será criado com <code>0</code>.</p>
     </div>
   </div>
 
   <script type="module">
-    import {
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+  import {
     getFirestore,
-    initializeFirestore,
     doc,
     getDoc,
     setDoc,
     runTransaction,
     onSnapshot,
     serverTimestamp,
-    Timestamp,
-    addDoc,
-    collection,
-    query,
-    orderBy
+    Timestamp
   } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
+  // Config do seu projeto (mantida)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
+    authDomain: "bancoteste-a09ee.firebaseapp.com",
+    projectId: "bancoteste-a09ee",
+    storageBucket: "bancoteste-a09ee.appspot.com",
+    messagingSenderId: "938322850076",
+    appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9",
+  };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDm-1F3odGeqFYk6dIcR2QM_hQFFQ1WfvU",
-      authDomain: "bancoteste-a09ee.firebaseapp.com",
-      projectId: "bancoteste-a09ee",
-      storageBucket: "bancoteste-a09ee.appspot.com",
-      messagingSenderId: "938322850076",
-      appId: "1:938322850076:web:bb83901cac6c4c3f4a8ad9",
-    };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    // Força long-polling para contornar proxies/firewalls e desativa fetch streams
-  // (ajuda muito em redes corporativas ou quando o navegador bloqueia conexões)
-  const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
+  const countEl = document.getElementById('count');
+  const statusEl = document.getElementById('status');
+  const btnPlus = document.getElementById('btnPlus');
+  const daysSinceEl = document.getElementById('daysSince');
 
-    const countEl = document.getElementById('count');
-    const statusEl = document.getElementById('status');
-    const btnPlus = document.getElementById('btnPlus');
-  const btnTest = document.getElementById('btnTest');
-  const diagEl = document.getElementById('diag');
-  const historyList = document.getElementById('historyList');
-    const daysSinceEl = document.getElementById('daysSince');
-    const historyList = document.getElementById('historyList');
+  const counterRef = doc(db, 'counters', 'leandro');
+  let lastUpdated = null;
 
-    const counterRef = doc(db, 'counters', 'leandro');
-    let lastUpdated = null;
+  function status(msg, isError = false) {
+    statusEl.textContent = msg;
+    statusEl.className = 'status ' + (isError ? 'error' : '');
+  }
 
-    function status(msg, isError = false) {
-      statusEl.textContent = msg;
-      statusEl.style.color = isError ? '#f87171' : '#9ca3af';
-    }
-
-    async function ensureDoc() {
-      const snap = await getDoc(counterRef);
-      if (!snap.exists()) {
-        await setDoc(counterRef, { count: 0, updatedAt: serverTimestamp(), history: [] });
-      }
-    }
-
-    function renderDaysSince() {
-      if (!lastUpdated) {
-        daysSinceEl.textContent = 'Sem ocorrências registradas ainda';
-        return;
-      }
-      const now = new Date();
-      const ms = now - lastUpdated;
-      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-      const label = days <= 0 ? '0 dias sem ocorrências' : `${days} dia${days === 1 ? '' : 's'} sem ocorrências`;
-      daysSinceEl.textContent = `${label} • Última: ${lastUpdated.toLocaleString()}`;
-    }
-
-    function renderHistory(arr) {
-      historyList.innerHTML = "";
-      arr.slice().reverse().forEach(ts => {
-        let d;
-        if (ts instanceof Timestamp) {
-          d = ts.toDate();
-        } else if (ts && typeof ts.toDate === 'function') {
-          d = ts.toDate();
-        } else {
-          d = new Date(ts);
-        }
-        const li = document.createElement('li');
-        li.textContent = d.toLocaleString();
-        historyList.appendChild(li);
-      });
-    }
-
-    (async () => {
-      try {
-        status('Conectando ao Firestore…', true);
-        await ensureDoc();
-
-        onSnapshot(counterRef, (snap) => {
-          if (!snap.exists()) {
-            status('Documento ausente (criando…)');
-            ensureDoc().catch(err => status(`Erro criando doc: ${err.message}`, true));
-            return;
-          }
-          const data = snap.data();
-          countEl.textContent = Number(data.count || 0);
-          status('Conectado e sincronizado (Firestore)');
-
-          const ts = data.updatedAt;
-          if (ts instanceof Timestamp) {
-            lastUpdated = ts.toDate();
-          } else if (ts && typeof ts.toDate === 'function') {
-            lastUpdated = ts.toDate();
-          } else if (ts) {
-            lastUpdated = new Date(ts);
-          } else {
-            lastUpdated = null;
-          }
-          renderDaysSince();
-      subscribeHistory();
-
-          if (data.history) {
-            renderHistory(data.history);
-          }
-        }, (err) => {
-          status(`Erro no onSnapshot: ${err?.message || err}`, true);
-        console.error('[Firestore onSnapshot]', err);
-        });
-
-        setInterval(renderDaysSince, 60 * 1000);
-      } catch (e) {
-        status(`Erro ao iniciar: ${e?.message || e}`, true);
-      console.error('[Init]', e);
-      }
-    })();
-
-    btnPlus.addEventListener('click', async () => {
-      try {
-        await runTransaction(db, async (transaction) => {
-          const snap = await transaction.get(counterRef);
-          if (!snap.exists()) {
-            transaction.set(counterRef, { count: 1, updatedAt: serverTimestamp(), history: [serverTimestamp()] });
-            return;
-          }
-          const current = Number(snap.data().count || 0);
-          transaction.update(counterRef, {
-            count: current + 1,
-            updatedAt: serverTimestamp(),
-            history: arrayUnion(serverTimestamp())
-          });
-        });
-        // Registra um evento no histórico
-      await addDoc(collection(db, 'counters', 'leandro', 'events'), { createdAt: serverTimestamp() });
-      status('Valor incrementado e salvo.');
-      } catch (err) {
-        status(`Erro ao incrementar: ${err.message}`, true);
-      }
-    });
-    // --- Histórico ---
-  function subscribeHistory() {
-    try {
-      const eventsRef = collection(db, 'counters', 'leandro', 'events');
-      const q = query(eventsRef, orderBy('createdAt', 'desc'));
-      onSnapshot(q, (snap) => {
-        if (!historyList) return;
-        historyList.innerHTML = '';
-        snap.forEach((d) => {
-          const data = d.data();
-          let dt = data.createdAt;
-          let jsDate = null;
-          if (dt instanceof Timestamp) {
-            jsDate = dt.toDate();
-          } else if (dt && typeof dt.toDate === 'function') {
-            jsDate = dt.toDate();
-          } else if (dt) {
-            jsDate = new Date(dt);
-          }
-          const li = document.createElement('li');
-          li.textContent = jsDate ? jsDate.toLocaleString() : '(sem data)';
-          historyList.appendChild(li);
-        });
-      }, (err) => status(`Erro no histórico: ${err?.message || err}`, true));
-    } catch (e) {
-      status(`Falha ao assinar histórico: ${e?.message || e}`, true);
+  async function ensureDoc() {
+    const snap = await getDoc(counterRef);
+    if (!snap.exists()) {
+      await setDoc(counterRef, { count: 0, updatedAt: serverTimestamp() });
     }
   }
-  // --- Diagnóstico ---
-  async function testConnection() {
+
+  function renderDaysSince() {
+    if (!lastUpdated) {
+      daysSinceEl.textContent = 'Sem ocorrências registradas ainda';
+      return;
+    }
+    const now = new Date();
+    const ms = now - lastUpdated;
+    const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+    const label = days <= 0 ? '0 dias sem ocorrências' : `${days} dia${days === 1 ? '' : 's'} sem ocorrências`;
+    daysSinceEl.textContent = `${label} • Última: ${lastUpdated.toLocaleString()}`;
+  }
+
+  (async () => {
     try {
-      diagEl.textContent = '→ testConnection: garantindo documento e realizando leitura/escrita...';
+      status('Conectando ao banco…', true);
       await ensureDoc();
-      const s1 = await getDoc(counterRef);
-      diagEl.textContent += `
-✓ getDoc ok: exists=${s1.exists()}`;
 
-      // tentativa de escrita leve: incrementa um campo "ping" em subcoleção de debug
-      const pingRef = collection(db, 'counters', 'leandro', 'debug');
-      await addDoc(pingRef, { at: serverTimestamp(), note: 'ping' });
-      diagEl.textContent += `
-✓ addDoc ping ok`;
+      onSnapshot(counterRef, (snap) => {
+        if (!snap.exists()) {
+          status('Documento ausente (criando…)');
+          ensureDoc().catch(err => status(`Erro criando doc: ${err.message}`, true));
+          return;
+        }
+        const data = snap.data();
+        countEl.textContent = Number(data.count || 0);
+        status('Conectado e sincronizado');
 
-      status('Conectado e sincronizado (Firestore)');
+        const ts = data.updatedAt;
+        if (ts instanceof Timestamp) {
+          lastUpdated = ts.toDate();
+        } else if (ts && typeof ts.toDate === 'function') {
+          lastUpdated = ts.toDate();
+        } else if (ts) {
+          lastUpdated = new Date(ts);
+        } else {
+          lastUpdated = null;
+        }
+        renderDaysSince();
+      }, (err) => {
+        status(`Erro no onSnapshot: ${err?.message || err}`, true);
+        console.error(err);
+      });
+
+      setInterval(renderDaysSince, 60 * 1000);
+      renderDaysSince();
     } catch (e) {
-      const msg = (e && e.message) ? e.message : String(e);
-      diagEl.textContent += `
-✗ ERRO: ${msg}`;
-      console.error('[TestConnection]', e);
-      status(`Falha de conexão: ${msg}`, true);
+      status(`Erro ao iniciar: ${e?.message || e}`, true);
+      console.error(e);
     }
-  }
+  })();
 
-  if (btnTest) {
-    btnTest.addEventListener('click', testConnection);
-  }
+  btnPlus.addEventListener('click', async () => {
+    try {
+      await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(counterRef);
+        if (!snap.exists()) {
+          transaction.set(counterRef, { count: 1, updatedAt: serverTimestamp() });
+          return;
+        }
+        const current = Number(snap.data().count || 0);
+        transaction.update(counterRef, { count: current + 1, updatedAt: serverTimestamp() });
+      });
+      status('Valor incrementado e salvo.');
+    } catch (err) {
+      status(`Erro ao incrementar: ${err.message}`, true);
+      console.error(err);
+    }
+  });
 </script>
 </body>
 </html>
